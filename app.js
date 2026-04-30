@@ -353,6 +353,11 @@ function render() {
   renderDetail();
 }
 
+function renderMapToggles() {
+  el.toggleSectors.checked = state.overlays.sectors;
+  el.toggleAreas.checked = state.overlays.areas;
+}
+
 function renderStatus() {
   const failures = Object.entries(state.loadErrors);
 
