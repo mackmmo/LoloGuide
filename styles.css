@@ -1,3 +1,353 @@
+:root {
+  --bg: #f5efdf;
+  --panel: rgba(255, 252, 246, 0.82);
+  --panel-strong: rgba(255, 255, 255, 0.94);
+  --ink: #16281f;
+  --muted: #647469;
+  --line: rgba(22, 40, 31, 0.1);
+  --accent: #0f8d61;
+  --accent-soft: rgba(15, 141, 97, 0.12);
+  --warm: #cf8743;
+  --shadow: 0 24px 60px rgba(31, 49, 41, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(15, 141, 97, 0.16), transparent 28%),
+    radial-gradient(circle at 80% 16%, rgba(207, 135, 67, 0.16), transparent 22%),
+    linear-gradient(180deg, #fbf7ee 0%, #ece2cf 100%);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(22, 40, 31, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(22, 40, 31, 0.03) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.75), transparent 88%);
+}
+
+.app-shell {
+  width: min(1380px, calc(100% - 28px));
+  margin: 20px auto 44px;
+  display: grid;
+  gap: 18px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 28px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.hero,
+.controls-panel,
+.list-panel,
+.detail-panel,
+.map-panel {
+  padding: 24px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.5fr minmax(280px, 400px);
+  gap: 18px;
+}
+
+.hero-side,
+.stats-grid,
+.controls-grid,
+.filters-panel-body,
+.filter-grid,
+.workspace-grid,
+.facts-grid,
+.record-list,
+.breadcrumbs,
+.mode-tabs,
+.subarea-route-strip,
+.map-toggles {
+  display: grid;
+  gap: 12px;
+}
+
+.workspace-grid {
+  grid-template-columns: minmax(320px, 430px) 1fr;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.filter-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 16px;
+}
+
+.facts-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 14px;
+}
+
+.eyebrow,
+.muted,
+label span,
+.summary-strip small {
+  color: var(--muted);
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  max-width: 11ch;
+  margin-bottom: 12px;
+  font-size: clamp(2.8rem, 6vw, 5rem);
+  line-height: 0.92;
+}
+
+h2 {
+  margin-bottom: 0;
+  font-size: 1.5rem;
+}
+
+h3 {
+  margin-bottom: 0;
+  font-size: 1rem;
+}
+
+.lede {
+  max-width: 60ch;
+  margin-bottom: 0;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.toolbar,
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 12px;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.filters-panel-body.is-collapsed {
+  display: none;
+}
+
+.section-head.compact {
+  margin-bottom: 8px;
+}
+
+.mode-tabs {
+  grid-template-columns: repeat(4, minmax(80px, 1fr));
+}
+
+button,
+input,
+select {
+  width: 100%;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  padding: 13px 16px;
+  transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+input,
+select {
+  padding: 13px 15px;
+  color: var(--ink);
+  background: var(--panel-strong);
+}
+
+.action {
+  border: none;
+  color: #f7fff9;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent) 0%, #18a974 100%);
+}
+
+.ghost,
+.mode-tab,
+.record-card,
+.fact-card,
+.description-card,
+.summary-strip,
+.stat-card {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.mode-tab.active {
+  border-color: rgba(15, 141, 97, 0.22);
+  background: linear-gradient(135deg, var(--accent-soft), rgba(207, 135, 67, 0.08));
+}
+
+.status-banner,
+.summary-strip,
+.description-card,
+.fact-card,
+.inner-panel,
+.stat-card {
+  padding: 14px 16px;
+  border-radius: 20px;
+}
+
+.stats-grid .stat-card strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.8rem;
+}
+
+.summary-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.summary-strip strong {
+  display: block;
+  margin-top: 4px;
+}
+
+label {
+  display: grid;
+  gap: 8px;
+}
+
+.full-span {
+  grid-column: 1 / -1;
+}
+
+.record-list {
+  margin-top: 16px;
+  max-height: 740px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.record-card {
+  text-align: left;
+  padding: 16px;
+  border-radius: 20px;
+}
+
+.record-card.active {
+  border-color: rgba(15, 141, 97, 0.24);
+  background: linear-gradient(135deg, rgba(15, 141, 97, 0.14), rgba(255, 255, 255, 0.94));
+}
+
+.record-card strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.record-card small,
+.fact-card small {
+  color: var(--muted);
+}
+
+.record-card p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.breadcrumbs {
+  grid-template-columns: repeat(auto-fit, minmax(120px, max-content));
+  margin-top: 14px;
+}
+
+.subarea-route-strip {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-top: 14px;
+}
+
+.crumb {
+  width: auto;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.subarea-route-card {
+  text-align: left;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.subarea-route-card.active {
+  border-color: rgba(15, 141, 97, 0.24);
+  background: linear-gradient(135deg, rgba(15, 141, 97, 0.14), rgba(255, 255, 255, 0.94));
+}
+
+.subarea-route-card strong {
+  display: block;
+}
+
+.subarea-route-card small {
+  color: var(--muted);
+}
+
+.facts-grid {
+  margin-top: 14px;
+}
+
+.fact-card strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.fact-card span {
+  display: block;
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
 .description-card {
   margin-top: 14px;
   line-height: 1.65;
