@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lolo Climbing Explorer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero panel">
+        <div>
+          <p class="eyebrow">Climbing Database</p>
+          <h1>Lolo Climbing Explorer</h1>
+          <p class="lede">
+            Browse routes and places in one flow. Search by climb name, filter by sector or area,
+            and jump between route, subarea, area, and sector details without leaving the page.
+          </p>
+        </div>
+
+        <div class="hero-side">
+          <label>
+            <span>Backend URL</span>
+            <input
+              id="backend-base"
+              type="url"
+              value="https://lolo-app-1.onrender.com"
+              placeholder="https://lolo-app-1.onrender.com"
+            />
+          </label>
+          <button id="refresh-app" class="action">Reload Data</button>
+          <p id="status-banner" class="status-banner">Loading climbing data from the backend...</p>
+          <div id="stats-grid" class="stats-grid"></div>
+        </div>
+      </section>
+
+      <section class="controls-grid">
+        <section class="panel controls-panel">
+          <div class="toolbar">
+            <div class="mode-tabs" id="mode-tabs">
+              <button class="mode-tab active" data-mode="routes">Routes</button>
+              <button class="mode-tab" data-mode="subareas">Subareas</button>
+              <button class="mode-tab" data-mode="areas">Areas</button>
+              <button class="mode-tab" data-mode="sectors">Sectors</button>
+            </div>
+            <div class="toolbar-actions">
+              <button id="toggle-filters" class="ghost">Hide Filters</button>
+              <button id="reset-all" class="ghost">Reset</button>
+            </div>
+          </div>
+
+          <div id="filters-panel-body" class="filters-panel-body">
+            <div class="filter-grid">
+            <label class="full-span">
+              <span>Search</span>
+              <input id="search-input" type="text" placeholder="Route, grade, type, area, subarea..." />
+            </label>
+            <label>
+              <span>Sector</span>
+              <select id="sector-filter"></select>
+            </label>
+            <label>
+              <span>Area</span>
+              <select id="area-filter"></select>
+            </label>
+            <label>
+              <span>Subarea</span>
+              <select id="subarea-filter"></select>
+            </label>
+            <label>
+              <span>Type</span>
+              <select id="type-filter"></select>
+            </label>
+            <label>
+              <span>Sort</span>
+              <select id="sort-filter">
+                <option value="default">Default</option>
+                <option value="name">Name A-Z</option>
+                <option value="grade">Grade</option>
+                <option value="stars">Stars</option>
+                <option value="height">Height</option>
+              </select>
+            </label>
+            </div>
+
+            <div class="summary-strip">
+            <div>
+              <small>Viewing</small>
