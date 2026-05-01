@@ -126,7 +126,7 @@ function bindEvents() {
   });
 
   el.searchInput.addEventListener("input", (event) => {
-    state.filters.search = event.target.value.trim();
+    state.filters.search = event.target.value;
     syncSelectedRecord();
     render();
   });
