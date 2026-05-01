@@ -296,14 +296,21 @@ function enrichSubarea(subarea) {
 }
 
 function enrichRoute(route) {
-  const subarea = subareaById.get(String(route.subarea));
+  const subarea = route.subarea ? subareaById.get(String(route.subarea)) : null;
+  const area =
+    route.area
+      ? areaById.get(String(route.area))
+      : subarea
+        ? areaById.get(String(subarea.area))
+        : null;
+
   return {
     ...route,
-    subarea_name: subarea?.name || "Unknown subarea",
-    area: subarea?.area ?? null,
-    area_name: subarea?.area_name || "Unknown area",
-    sector: subarea?.sector ?? null,
-    sector_name: subarea?.sector_name || "Unknown sector"
+    subarea_name: route.subarea_name || subarea?.name || "",
+    area: route.area ?? subarea?.area ?? null,
+    area_name: route.area_name || area?.name || "Unknown area",
+    sector: area?.sector ?? null,
+    sector_name: area?.sector_name || "Unknown sector"
   };
 }
 
