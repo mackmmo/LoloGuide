@@ -914,7 +914,7 @@ function focusAreaFromMap(area) {
   if (map && polygons.length) {
     const bounds = L.latLngBounds(polygons.flat(1));
     if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [30, 30], maxZoom: 20 });
+      map.fitBounds(bounds, { padding: [20, 20], maxZoom: 16 });
     }
   }
 
