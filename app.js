@@ -2,7 +2,7 @@ const DEFAULT_API_BASE = "https://lolo-app-1.onrender.com";
 const API_BASE_STORAGE_KEY = "lolo-api-base";
 
 const state = {
-  apiBase: normalizeBaseUrl(localStorage.getItem(API_BASE_STORAGE_KEY) || DEFAULT_API_BASE),
+  apiBase: DEFAULT_API_BASE,
   isLoading: false,
   loadErrors: {},
   mode: "routes",
