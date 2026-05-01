@@ -192,12 +192,6 @@ function bindEvents() {
   });
 }
 
-function applyBackendBaseFromInput() {
-  state.apiBase = normalizeBaseUrl(el.backendBase.value || DEFAULT_API_BASE);
-  el.backendBase.value = state.apiBase;
-  localStorage.setItem(API_BASE_STORAGE_KEY, state.apiBase);
-}
-
 async function loadAllData() {
   state.isLoading = true;
   state.loadErrors = {};
