@@ -909,6 +909,15 @@ function focusAreaFromMap(area) {
   state.contextRecord = state.datasets.areas.find((item) => String(item.area_id) === String(area.area_id)) || null;
   state.contextMode = "areas";
   state.selected = null;
+
+  const polygons = parseMultiPolygon(area.boundary);
+  if (map && polygons.length) {
+    const bounds = L.latLngBounds(polygons.flat(1));
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+    }
+  }
+  
   render();
 }
 
