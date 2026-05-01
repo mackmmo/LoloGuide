@@ -31,10 +31,8 @@ const state = {
 };
 
 const el = {
-  backendBase: document.querySelector("#backend-base"),
   statusBanner: document.querySelector("#status-banner"),
   statsGrid: document.querySelector("#stats-grid"),
-  refreshApp: document.querySelector("#refresh-app"),
   resetAll: document.querySelector("#reset-all"),
   toggleFilters: document.querySelector("#toggle-filters"),
   filtersPanelBody: document.querySelector("#filters-panel-body"),
@@ -102,16 +100,6 @@ function initMap() {
 }
 
 function bindEvents() {
-  el.refreshApp.addEventListener("click", async () => {
-    applyBackendBaseFromInput();
-    await loadAllData();
-  });
-
-  el.backendBase.addEventListener("change", () => {
-    applyBackendBaseFromInput();
-    renderStatus();
-  });
-
   el.resetAll.addEventListener("click", resetAll);
   el.toggleFilters.addEventListener("click", () => {
     state.filtersCollapsed = !state.filtersCollapsed;
