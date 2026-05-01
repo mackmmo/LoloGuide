@@ -71,7 +71,6 @@ let areaById = new Map();
 let subareaById = new Map();
 
 function init() {
-  el.backendBase.value = state.apiBase;
   initMap();
   bindEvents();
   renderStats();
