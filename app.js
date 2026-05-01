@@ -912,9 +912,10 @@ function focusAreaFromMap(area) {
 
   const polygons = parseMultiPolygon(area.boundary);
   if (map && polygons.length) {
-    const bounds = L.latLngBounds(polygons.flat(1));
+    const points = polygons.flat(2);
+    const bounds = L.latLngBounds(points);
     if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [20, 20], maxZoom: 16 });
+      map.fitBounds(bounds, { padding: [30, 30] });
     }
   }
 
