@@ -410,6 +410,10 @@ function populatePrimitiveSelect(select, emptyLabel, values, selectedValue) {
 }
 
 function renderStats() {
+  if (!el.statsGrid) {
+    return;
+  }
+
   el.statsGrid.innerHTML = [
     statCard("Routes", state.datasets.routes.length),
     statCard("Subareas", state.datasets.subareas.length),
