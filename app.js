@@ -985,6 +985,17 @@ function renderOverlayLayers() {
       console.log("Areas source added");
     }
     
+    if (!map.getSource("area-labels")) {
+      map.addSource("area-labels", {
+        type: "vector",
+        tiles: [`${state.apiBase}/tiles/area-labels/{z}/{x}/{y}.mvt`],
+        minzoom: 0,
+        maxzoom: 14
+      });
+  console.log("Area labels source added");
+    }
+
+
     if (!map.getLayer("areas-fill")) {
       map.addLayer({
         id: "areas-fill",
@@ -1013,15 +1024,7 @@ function renderOverlayLayers() {
       console.log("Areas outline layer added");
     }
 
-if (!map.getSource("area-labels")) {
-  map.addSource("area-labels", {
-    type: "vector",
-    tiles: [`${state.apiBase}/tiles/area-labels/{z}/{x}/{y}.mvt`],
-    minzoom: 0,
-    maxzoom: 14
-  });
-  console.log("Area labels source added");
-}
+
 
 if (!map.getLayer("areas-labels")) {
   map.addLayer({
