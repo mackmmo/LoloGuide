@@ -204,40 +204,46 @@ async function loadAllData() {
   state.loadErrors = {};
   renderStatus();
 
-  const endpoints = ["sectors", "areas", "subareas", "routes"];
-  const results = await Promise.all(
-    endpoints.map(async (name) => {
-      const response = await fetchJson(`${state.apiBase}/${name}/`);
-      return [name, response];
-    })
-  );
+  try {
+    const endpoints = ["sectors", "areas", "subareas", "routes"];
+    const results = await Promise.all(
+      endpoints.map(async (name) => {
+        const response = await fetchJson(`${state.apiBase}/${name}/`);
+        return [name, response];
+      })
+    );
 
-  const nextDatasets = {
-    sectors: [],
-    areas: [],
-    subareas: [],
-    routes: []
-  };
-  const nextErrors = {};
+    const nextDatasets = {
+      sectors: [],
+      areas: [],
+      subareas: [],
+      routes: []
+    };
+    const nextErrors = {};
 
-  results.forEach(([name, result]) => {
-    if (result.ok) {
-      nextDatasets[name] = Array.isArray(result.data) ? result.data : [];
-      return;
-    }
-    nextErrors[name] = result.error;
-  });
+    results.forEach(([name, result]) => {
+      if (result.ok) {
+        nextDatasets[name] = Array.isArray(result.data) ? result.data : [];
+        return;
+      }
+      nextErrors[name] = result.error;
+    });
 
-  state.datasets.sectors = nextDatasets.sectors;
-  state.datasets.areas = nextDatasets.areas;
-  state.datasets.subareas = nextDatasets.subareas;
-  state.datasets.routes = nextDatasets.routes;
-  state.loadErrors = nextErrors;
-  rebuildIndexes();
-  state.isLoading = false;
-  syncSelectedRecord();
-  render();
-  fitMapToOverview();
+    state.datasets.sectors = nextDatasets.sectors;
+    state.datasets.areas = nextDatasets.areas;
+    state.datasets.subareas = nextDatasets.subareas;
+    state.datasets.routes = nextDatasets.routes;
+    state.loadErrors = nextErrors;
+    rebuildIndexes();
+  } catch (error) {
+    console.error("loadAllData error", error);
+    state.loadErrors.general = error.message || String(error);
+  } finally {
+    state.isLoading = false;
+    syncSelectedRecord();
+    render();
+    fitMapToOverview();
+  }
 }
 
 async function fetchJson(url) {
@@ -895,44 +901,52 @@ function focusAreaFromMap(area) {
   render();
 }
 
-function renderOverlayLayers() {function renderOverlayLayers() {
-  if (!map || !map.isStyleLoaded()) {
+function renderOverlayLayers() {
+  if (!map) {
     return;
   }
 
-  if (!map.getSource("areas")) {
-    map.addSource("areas", {
-      type: "vector",
-      tiles: [`${state.apiBase}/tiles/areas/{z}/{x}/{y}.mvt`],
-      minzoom: 0,
-      maxzoom: 14
-    });
+  if (!map.isStyleLoaded()) {
+    return;
   }
 
-  if (!map.getLayer("areas-fill")) {
-    map.addLayer({
-      id: "areas-fill",
-      type: "fill",
-      source: "areas",
-      "source-layer": "areas",
-      paint: {
-        "fill-color": "#1fa177",
-        "fill-opacity": 0.28
-      }
-    });
-  }
+  try {
+    if (!map.getSource("areas")) {
+      map.addSource("areas", {
+        type: "vector",
+        tiles: [`${state.apiBase}/tiles/areas/{z}/{x}/{y}.mvt`],
+        minzoom: 0,
+        maxzoom: 14
+      });
+    }
 
-  if (!map.getLayer("areas-outline")) {
-    map.addLayer({
-      id: "areas-outline",
-      type: "line",
-      source: "areas",
-      "source-layer": "areas",
-      paint: {
-        "line-color": "#0f8d61",
-        "line-width": 2
-      }
-    });
+    if (!map.getLayer("areas-fill")) {
+      map.addLayer({
+        id: "areas-fill",
+        type: "fill",
+        source: "areas",
+        "source-layer": "areas",
+        paint: {
+          "fill-color": "#1fa177",
+          "fill-opacity": 0.28
+        }
+      });
+    }
+
+    if (!map.getLayer("areas-outline")) {
+      map.addLayer({
+        id: "areas-outline",
+        type: "line",
+        source: "areas",
+        "source-layer": "areas",
+        paint: {
+          "line-color": "#0f8d61",
+          "line-width": 2
+        }
+      });
+    }
+  } catch (error) {
+    console.error("renderOverlayLayers error", error);
   }
 }
 
