@@ -984,7 +984,7 @@ function renderOverlayLayers() {
       });
       console.log("Areas source added");
     }
-
+    
     if (!map.getLayer("areas-fill")) {
       map.addLayer({
         id: "areas-fill",
@@ -1013,27 +1013,37 @@ function renderOverlayLayers() {
       console.log("Areas outline layer added");
     }
 
-    if (!map.getLayer("areas-labels")) {
-      map.addLayer({
-        id: "areas-labels",
-        type: "symbol",
-        source: "areas",
-        "source-layer": "areas",
-        minzoom: 8,
-        layout: {
-          "text-field": ["get", "name"],
-          "text-size": 12,
-          "text-allow-overlap": true,
-          "text-ignore-placement": true
-        },
-        paint: {
-          "text-color": "#173126",
-          "text-halo-color": "rgba(255,255,255,0.95)",
-          "text-halo-width": 1.5
-        }
-      });
-      console.log("Areas labels layer added");
+if (!map.getSource("area-labels")) {
+  map.addSource("area-labels", {
+    type: "vector",
+    tiles: [`${state.apiBase}/tiles/area-labels/{z}/{x}/{y}.mvt`],
+    minzoom: 0,
+    maxzoom: 14
+  });
+  console.log("Area labels source added");
+}
+
+if (!map.getLayer("areas-labels")) {
+  map.addLayer({
+    id: "areas-labels",
+    type: "symbol",
+    source: "area-labels",
+    "source-layer": "area-labels",
+    minzoom: 8,
+    layout: {
+      "text-field": ["get", "name"],
+      "text-size": 12,
+      "text-allow-overlap": false,
+      "text-ignore-placement": false
+    },
+    paint: {
+      "text-color": "#173126",
+      "text-halo-color": "rgba(255,255,255,0.95)",
+      "text-halo-width": 1.5
     }
+  });
+  console.log("Areas labels layer added");
+}
 
     if (!map.__areasPopupBound && map.getLayer("areas-fill")) {
       map.on("click", "areas-fill", (event) => {
