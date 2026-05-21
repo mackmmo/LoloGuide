@@ -102,7 +102,12 @@ function initMap() {
   map.addControl(new maplibregl.NavigationControl(), "top-left");
 
   map.on("load", () => {
+    console.log("Map loaded");
     renderOverlayLayers();
+  });
+
+  map.on("error", (e) => {
+    console.error("MapLibre error", e);
   });
 }
 
@@ -903,12 +908,16 @@ function focusAreaFromMap(area) {
 
 function renderOverlayLayers() {
   if (!map) {
+    console.log("No map yet");
     return;
   }
 
   if (!map.isStyleLoaded()) {
+    console.log("Map style not loaded yet");
     return;
   }
+
+  console.log("Adding areas source/layers");
 
   try {
     if (!map.getSource("areas")) {
@@ -918,6 +927,7 @@ function renderOverlayLayers() {
         minzoom: 0,
         maxzoom: 14
       });
+      console.log("Areas source added");
     }
 
     if (!map.getLayer("areas-fill")) {
@@ -931,6 +941,7 @@ function renderOverlayLayers() {
           "fill-opacity": 0.28
         }
       });
+      console.log("Areas fill layer added");
     }
 
     if (!map.getLayer("areas-outline")) {
@@ -944,6 +955,7 @@ function renderOverlayLayers() {
           "line-width": 2
         }
       });
+      console.log("Areas outline layer added");
     }
   } catch (error) {
     console.error("renderOverlayLayers error", error);
