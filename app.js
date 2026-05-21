@@ -80,22 +80,30 @@ function init() {
 }
 
 function initMap() {
-  if (!window.L) {
-    el.mapMeta.textContent = "Map library unavailable. Browse data normally.";
-    return;
-  }
+  map = new maplibregl.Map({
+    container: "map",
+    style: {
+      version: 8,
+      sources: {},
+      layers: [
+        {
+          id: "background",
+          type: "background",
+          paint: {
+            "background-color": "#f5efdf"
+          }
+        }
+      ]
+    },
+    center: [-113.994, 46.8721],
+    zoom: 9
+  });
 
-  map = L.map("map", { zoomControl: true }).setView([46.8721, -113.994,], 9);
+  map.addControl(new maplibregl.NavigationControl(), "top-left");
 
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 18,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-  }).addTo(map);
-
-  sectorLayerGroup = L.layerGroup().addTo(map);
-  areaLayerGroup = L.layerGroup().addTo(map);
-  map.on("zoomend", renderOverlayLayers);
-  renderOverlayLayers();
+  map.on("load", () => {
+    renderOverlayLayers();
+  });
 }
 
 function bindEvents() {
@@ -862,42 +870,7 @@ function subareaMatchesArea(subareaId, areaId) {
   return subarea ? String(subarea.area) === String(areaId) : false;
 }
 
-function updateMap(record) {
-  if (!map) {
-    return;
-  }
-
-  if (marker) {
-    map.removeLayer(marker);
-    marker = null;
-  }
-
-  if (!record) {
-    fitMapToOverview();
-    return;
-  }
-
-  const detailMode = state.contextMode || state.mode;
-  const point = parsePoint(record.centroid);
-  if (!point) {
-    el.mapMeta.textContent = "No mappable centroid found for this selection.";
-    return;
-  }
-
-  marker = L.tooltip({
-    permanent: true,
-    direction: "center",
-    className: "map-label-tooltip map-selection-tooltip"
-  })
-    .setLatLng(point)
-    .setContent(escapeHtml(recordTitle(record)))
-    .addTo(map);
-
-  map.setView(point, detailMode === "routes" ? 14 : detailMode === "subareas" ? 13 : 12);
-  el.mapMeta.textContent = `${recordTitle(record)} centered from stored centroid geometry.`;
-  el.mapContextTitle.textContent = recordTitle(record);
-  el.mapContextBody.textContent = mapContextDescription(record);
-}
+function updateMap(record) {}
 
 function focusAreaFromMap(area) {
   state.filters.sectorId = String(area.sector);
@@ -922,93 +895,9 @@ function focusAreaFromMap(area) {
   render();
 }
 
-function renderOverlayLayers() {
-  if (!map || !window.L || !sectorLayerGroup || !areaLayerGroup) {
-    return;
-  }
+function renderOverlayLayers() {}
 
-  sectorLayerGroup.clearLayers();
-  areaLayerGroup.clearLayers();
-
-  const zoom = map.getZoom();
-  const showSectorLabels = zoom <= 10;
-  const showAreaLabels = zoom >= 12;
-
-  if (state.overlays.sectors) {
-    state.datasets.sectors.forEach((sector, index) => {
-      const polygons = parseMultiPolygon(sector.boundary);
-      polygons.forEach((polygon) => {
-        L.polygon(polygon, {
-          color: sectorColor(index),
-          weight: 2,
-          fillColor: sectorColor(index),
-          fillOpacity: 0.08
-        }).addTo(sectorLayerGroup);
-      });
-
-      const point = parsePoint(sector.centroid);
-      if (point && showSectorLabels) {
-        L.tooltip({
-          permanent: true,
-          direction: "center",
-          className: "map-label-tooltip"
-        })
-          .setLatLng(point)
-          .setContent(escapeHtml(sector.name))
-          .addTo(sectorLayerGroup);
-      }
-    });
-  }
-
-  if (state.overlays.areas) {
-    state.datasets.areas.forEach((area, index) => {
-      const polygons = parseMultiPolygon(area.boundary);
-      polygons.forEach((polygon) => {
-        const areaPolygon = L.polygon(polygon, {
-          color: areaColor(index),
-          weight: 2,
-          fillColor: areaColor(index),
-          fillOpacity: 0.34
-        }).addTo(areaLayerGroup);
-        areaPolygon.on("click", () => focusAreaFromMap(area));
-      });
-
-      const point = parsePoint(area.centroid);
-      if (point && showAreaLabels) {
-        const areaLabel = L.tooltip({
-          permanent: true,
-          direction: "center",
-          className: "map-label-tooltip"
-        })
-          .setLatLng(point)
-          .setContent(escapeHtml(area.name))
-          .addTo(areaLayerGroup);
-        areaLabel.on("click", () => focusAreaFromMap(area));
-      }
-    });
-  }
-}
-
-function fitMapToOverview() {
-  if (!map || !window.L) {
-    return;
-  }
-
-  const points = [
-    ...state.datasets.sectors.map((sector) => parsePoint(sector.centroid)).filter(Boolean),
-    ...state.datasets.areas.map((area) => parsePoint(area.centroid)).filter(Boolean)
-  ];
-
-  if (!points.length) {
-    map.setView([46.8721, -113.994], 9);
-    return;
-  }
-
-  const bounds = L.latLngBounds(points);
-  if (bounds.isValid()) {
-    map.fitBounds(bounds, { padding: [30, 30] });
-  }
-}
+function fitMapToOverview() {}
 
 function parsePoint(value) {
   if (!value || typeof value !== "string") {
