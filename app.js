@@ -1043,26 +1043,22 @@ function renderOverlayLayers() {
     type: "symbol",
     source: "areas",
     "source-layer": "areas",
-    minzoom: 10,
+    minzoom: 8,
     layout: {
       "text-field": ["get", "name"],
-      "text-font": ["Grotesque Medium", "Arial Unicode MS Regular"],
-      "text-size": [
-        "interpolate",
-        ["linear"],
-        ["zoom"],
-        10, 11,
-        14, 15
-      ],
-      "text-allow-overlap": false,
-      "text-ignore-placement": false
+      "text-size": 12,
+      "text-font": ["Open Sans Regular"],
+      "text-allow-overlap": true,
+      "text-ignore-placement": true
     },
     paint: {
       "text-color": "#173126",
-      "text-halo-color": "rgba(255,255,255,0.9)",
-      "text-halo-width": 1.2
+      "text-halo-color": "rgba(255,255,255,0.95)",
+      "text-halo-width": 1.5
     }
   });
+}
+
 }
   } catch (error) {
     console.error("renderOverlayLayers error", error);
