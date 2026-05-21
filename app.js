@@ -974,31 +974,6 @@ function renderOverlayLayers() {
   console.log("Adding areas source/layers");
 
   try {
-    if (!map.__areasPopupBound) {
-  map.on("click", "areas-fill", (event) => {
-    const feature = event.features && event.features[0];
-    if (!feature) {
-      return;
-    }
-
-    const areaId = String(feature.properties.area_id);
-    const area = state.datasets.areas.find((item) => String(item.area_id) === areaId);
-    if (!area) {
-      return;
-    }
-
-    new maplibregl.Popup({
-      closeButton: true,
-      closeOnClick: true,
-      maxWidth: "320px"
-    })
-      .setLngLat(event.lngLat)
-      .setHTML(buildAreaPopupHtml(area))
-      .addTo(map);
-  });
-
-  map.__areasPopupBound = true;
-}
     if (!map.getSource("areas")) {
       map.addSource("areas", {
         type: "vector",
@@ -1036,30 +1011,55 @@ function renderOverlayLayers() {
       });
       console.log("Areas outline layer added");
     }
-    
-    if (!map.getLayer("areas-labels")) {
-    map.addLayer({
-    id: "areas-labels",
-    type: "symbol",
-    source: "areas",
-    "source-layer": "areas",
-    minzoom: 8,
-    layout: {
-      "text-field": ["get", "name"],
-      "text-size": 12,
-      "text-font": ["Open Sans Regular"],
-      "text-allow-overlap": true,
-      "text-ignore-placement": true
-    },
-    paint: {
-      "text-color": "#173126",
-      "text-halo-color": "rgba(255,255,255,0.95)",
-      "text-halo-width": 1.5
-    }
-  });
-}
 
-}
+    if (!map.getLayer("areas-labels")) {
+      map.addLayer({
+        id: "areas-labels",
+        type: "symbol",
+        source: "areas",
+        "source-layer": "areas",
+        minzoom: 8,
+        layout: {
+          "text-field": ["get", "name"],
+          "text-size": 12,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        paint: {
+          "text-color": "#173126",
+          "text-halo-color": "rgba(255,255,255,0.95)",
+          "text-halo-width": 1.5
+        }
+      });
+      console.log("Areas labels layer added");
+    }
+
+    if (!map.__areasPopupBound && map.getLayer("areas-fill")) {
+      map.on("click", "areas-fill", (event) => {
+        const feature = event.features && event.features[0];
+        if (!feature) {
+          return;
+        }
+
+        const areaId = String(feature.properties.area_id);
+        const area = state.datasets.areas.find((item) => String(item.area_id) === areaId);
+        if (!area) {
+          return;
+        }
+
+        new maplibregl.Popup({
+          closeButton: true,
+          closeOnClick: true,
+          maxWidth: "320px"
+        })
+          .setLngLat(event.lngLat)
+          .setHTML(buildAreaPopupHtml(area))
+          .addTo(map);
+      });
+
+      map.__areasPopupBound = true;
+      console.log("Areas popup handler added");
+    }
   } catch (error) {
     console.error("renderOverlayLayers error", error);
   }
