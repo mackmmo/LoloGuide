@@ -895,7 +895,46 @@ function focusAreaFromMap(area) {
   render();
 }
 
-function renderOverlayLayers() {}
+function renderOverlayLayers() {function renderOverlayLayers() {
+  if (!map || !map.isStyleLoaded()) {
+    return;
+  }
+
+  if (!map.getSource("areas")) {
+    map.addSource("areas", {
+      type: "vector",
+      tiles: [`${state.apiBase}/tiles/areas/{z}/{x}/{y}.mvt`],
+      minzoom: 0,
+      maxzoom: 14
+    });
+  }
+
+  if (!map.getLayer("areas-fill")) {
+    map.addLayer({
+      id: "areas-fill",
+      type: "fill",
+      source: "areas",
+      "source-layer": "areas",
+      paint: {
+        "fill-color": "#1fa177",
+        "fill-opacity": 0.28
+      }
+    });
+  }
+
+  if (!map.getLayer("areas-outline")) {
+    map.addLayer({
+      id: "areas-outline",
+      type: "line",
+      source: "areas",
+      "source-layer": "areas",
+      paint: {
+        "line-color": "#0f8d61",
+        "line-width": 2
+      }
+    });
+  }
+}
 
 function fitMapToOverview() {}
 
