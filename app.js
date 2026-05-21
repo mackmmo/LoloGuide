@@ -937,7 +937,7 @@ function renderOverlayLayers() {
         source: "areas",
         "source-layer": "areas",
         paint: {
-          "fill-color": "#1fa177",
+          "fill-color": "#7570b3",
           "fill-opacity": 0.28
         }
       });
@@ -951,12 +951,40 @@ function renderOverlayLayers() {
         source: "areas",
         "source-layer": "areas",
         paint: {
-          "line-color": "#0f8d61",
-          "line-width": 2
+          "line-color": "#7570b3",
+          "line-width": 1.5
         }
       });
       console.log("Areas outline layer added");
     }
+    
+    if (!map.getLayer("areas-labels")) {
+    map.addLayer({
+    id: "areas-labels",
+    type: "symbol",
+    source: "areas",
+    "source-layer": "areas",
+    minzoom: 10,
+    layout: {
+      "text-field": ["get", "name"],
+      "text-font": ["Indie Flower Regular"],
+      "text-size": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        10, 11,
+        14, 15
+      ],
+      "text-allow-overlap": false,
+      "text-ignore-placement": false
+    },
+    paint: {
+      "text-color": "#173126",
+      "text-halo-color": "rgba(255,255,255,0.9)",
+      "text-halo-width": 1.2
+    }
+  });
+}
   } catch (error) {
     console.error("renderOverlayLayers error", error);
   }

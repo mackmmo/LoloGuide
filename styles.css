@@ -510,3 +510,45 @@ label {
     min-height: 340px;
   }
 }
+
+.map-popup-card {
+  min-width: 220px;
+  max-width: 300px;
+  color: var(--ink);
+  font-family: "Space Grotesk", system-ui, sans-serif;
+}
+
+.map-popup-card h3 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.map-popup-description {
+  margin: 0 0 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.map-popup-facts {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.map-popup-facts span {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.map-popup-facts strong {
+  margin-right: 6px;
+  color: var(--ink);
+}
+
+.map-popup-summary {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
