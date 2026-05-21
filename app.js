@@ -906,6 +906,60 @@ function focusAreaFromMap(area) {
   render();
 }
 
+function getRouteTypeCountsForArea(areaId) {
+  const counts = {
+    Sport: 0,
+    Trad: 0,
+    Mixed: 0,
+    Other: 0
+  };
+
+  state.datasets.routes
+    .filter((route) => String(route.area) === String(areaId))
+    .forEach((route) => {
+      const label = routeTypeLabel(route.type);
+      if (label === "Sport" || label === "Trad" || label === "Mixed") {
+        counts[label] += 1;
+      } else {
+        counts.Other += 1;
+      }
+    });
+
+  return counts;
+}
+
+function buildAreaTypeSummary(areaId) {
+  const counts = getRouteTypeCountsForArea(areaId);
+
+  return [
+    counts.Sport ? `${counts.Sport} sport` : "",
+    counts.Trad ? `${counts.Trad} trad` : "",
+    counts.Mixed ? `${counts.Mixed} mixed` : "",
+    counts.Other ? `${counts.Other} other` : ""
+  ]
+    .filter(Boolean)
+    .join(" | ");
+}
+
+function buildAreaPopupHtml(area) {
+  const typeSummary = buildAreaTypeSummary(area.area_id);
+
+  return `
+    <div class="map-popup-card">
+      <h3>${escapeHtml(area.name)}</h3>
+      <p class="map-popup-description">
+        ${escapeHtml(area.description || "No description available.")}
+      </p>
+      <div class="map-popup-facts">
+        <span><strong>Drive</strong> ${escapeHtml(area.drive_time ? `${area.drive_time} min` : "-")}</span>
+        <span><strong>Approach</strong> ${escapeHtml(area.approach_time ? `${area.approach_time} min` : "-")}</span>
+        <span><strong>Aspect</strong> ${escapeHtml(area.aspect || "-")}</span>
+      </div>
+      ${typeSummary ? `<p class="map-popup-summary">${escapeHtml(typeSummary)}</p>` : ""}
+    </div>
+  `;
+}
+
 function renderOverlayLayers() {
   if (!map) {
     console.log("No map yet");
@@ -920,6 +974,31 @@ function renderOverlayLayers() {
   console.log("Adding areas source/layers");
 
   try {
+    if (!map.__areasPopupBound) {
+  map.on("click", "areas-fill", (event) => {
+    const feature = event.features && event.features[0];
+    if (!feature) {
+      return;
+    }
+
+    const areaId = String(feature.properties.area_id);
+    const area = state.datasets.areas.find((item) => String(item.area_id) === areaId);
+    if (!area) {
+      return;
+    }
+
+    new maplibregl.Popup({
+      closeButton: true,
+      closeOnClick: true,
+      maxWidth: "320px"
+    })
+      .setLngLat(event.lngLat)
+      .setHTML(buildAreaPopupHtml(area))
+      .addTo(map);
+  });
+
+  map.__areasPopupBound = true;
+}
     if (!map.getSource("areas")) {
       map.addSource("areas", {
         type: "vector",
