@@ -1046,7 +1046,7 @@ function renderOverlayLayers() {
     minzoom: 10,
     layout: {
       "text-field": ["get", "name"],
-      "text-font": ["Indie Flower Regular"],
+      "text-font": ["Grotesque Medium", "Arial Unicode MS Regular"],
       "text-size": [
         "interpolate",
         ["linear"],
