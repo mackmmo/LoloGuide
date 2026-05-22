@@ -1026,9 +1026,9 @@ function renderOverlayLayers() {
 
 
 
-if (!map.getLayer("areas-labels")) {
+if (!map.getLayer("area-labels")) {
   map.addLayer({
-    id: "areas-labels",
+    id: "area-labels",
     type: "symbol",
     source: "area-labels",
     "source-layer": "area-labels",
