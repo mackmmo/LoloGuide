@@ -82,20 +82,7 @@ function init() {
 function initMap() {
   map = new maplibregl.Map({
     container: "map",
-    style: {
-      version: 8,
-      glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
-      sources: {},
-      layers: [
-        {
-          id: "background",
-          type: "background",
-          paint: {
-            "background-color": "#f5efdf"
-          }
-        }
-      ]
-    },
+    style: "https://api.maptiler.com/maps/outdoor-v2/style.json?key=YOUR_KEY",
     center: [-114.56835793693313, 46.69852662439601],
     zoom: 11
   });
@@ -107,10 +94,22 @@ function initMap() {
     renderOverlayLayers();
   });
 
+  map.on("error", (event) => {
+    console.error("MapLibre error", event);
+  });
+}
+
+  map.addControl(new maplibregl.NavigationControl(), "top-left");
+
+  map.on("load", () => {
+    console.log("Map loaded");
+    renderOverlayLayers();
+  });
+
   map.on("error", (e) => {
     console.error("MapLibre error", e);
   });
-}
+
 
 function bindEvents() {
   el.resetAll.addEventListener("click", resetAll);
@@ -1061,20 +1060,13 @@ if (!map.getLayer("roads-line")) {
     type: "line",
     source: "roads",
     "source-layer": "roads",
-    minzoom: 11,
+    minzoom: 0,
     paint: {
-      "line-color": "#8f8470",
-      "line-width": [
-        "interpolate",
-        ["linear"],
-        ["zoom"],
-        11, 1,
-        15, 3
-      ],
-      "line-opacity": 0.75
+      "line-color": "#ff0000",
+      "line-width": 6,
+      "line-opacity": 1
     }
   });
-  console.log("Roads line layer added");
 }
 
 if (!map.getSource("trails")) {
