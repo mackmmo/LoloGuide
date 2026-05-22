@@ -82,7 +82,7 @@ function init() {
 function initMap() {
   map = new maplibregl.Map({
     container: "map",
-    style: "https://api.maptiler.com/maps/outdoor-v2/style.json?key=izwnMfYAP1x5LDeYc4zb",
+    style: "https://api.maptiler.com/tiles/hand-drawn-hillshade/tiles.json?key=izwnMfYAP1x5LDeYc4zb",
     center: [-114.56835793693313, 46.69852662439601],
     zoom: 11
   });
