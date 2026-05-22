@@ -82,7 +82,7 @@ function init() {
 function initMap() {
   map = new maplibregl.Map({
     container: "map",
-    style: "https://demotiles.maplibre.org/style.json",
+    style: "https://api.maptiler.com/maps/outdoor-v2/style.json?key=YOUR_REAL_KEY",
     center: [-114.56835793693313, 46.69852662439601],
     zoom: 11
   });
