@@ -96,8 +96,8 @@ function initMap() {
         }
       ]
     },
-    center: [-113.994, 46.8721],
-    zoom: 9
+    center: [-114.56835793693313, 46.69852662439601],
+    zoom: 11
   });
 
   map.addControl(new maplibregl.NavigationControl(), "top-left");
