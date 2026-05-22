@@ -1031,7 +1031,7 @@ if (!map.getLayer("area-labels")) {
     id: "area-labels",
     type: "symbol",
     source: "area-labels",
-    "source-layer": "area-labels",
+    "source-layer": "area_labels",
     minzoom: 8,
     layout: {
       "text-field": ["get", "name"],
