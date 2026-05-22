@@ -932,8 +932,6 @@ function buildAreaTypeSummary(areaId) {
 
 function buildAreaPopupHtml(area) {
   const typeSummary = buildAreaTypeSummary(area.area_id);
-  const lat = area.lat ? Number(area.lat).toFixed(5) : "-";
-  const lon = area.lon ? Number(area.lon).toFixed(5) : "-";
 
   return `
     <div class="map-popup-card">
@@ -941,7 +939,6 @@ function buildAreaPopupHtml(area) {
       <p class="map-popup-description">
         ${escapeHtml(area.description || "No description available.")}
       </p>
-      <p class="map-popup-summary"><strong>Lat/Lon</strong> ${lat}, ${lon}</p>
       <div class="map-popup-facts">
         <span><strong>Drive</strong> ${escapeHtml(area.drive_time ? `${area.drive_time} min` : "-")}</span>
         <span><strong>Approach</strong> ${escapeHtml(area.approach_time ? `${area.approach_time} min` : "-")}</span>
@@ -1274,6 +1271,10 @@ if (!map.__areasPopupBound && map.getLayer("areas-fill")) {
   });
 
   map.__areasPopupBound = true;
+}
+  } catch (error) {
+    console.error("renderOverlayLayers error", error);
+  }
 }
 
 function fitMapToOverview() {}
