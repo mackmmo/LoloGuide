@@ -1137,6 +1137,112 @@ if (!map.getLayer("trails-labels")) {
   console.log("Trail labels layer added");
 }
 
+if (!map.getSource("pois")) {
+  map.addSource("pois", {
+    type: "vector",
+    tiles: [`${state.apiBase}/tiles/pois/{z}/{x}/{y}.mvt`],
+    minzoom: 0,
+    maxzoom: 14
+  });
+  console.log("POIs source added");
+}
+
+if (!map.getLayer("pois-points")) {
+  map.addLayer({
+    id: "pois-points",
+    type: "symbol",
+    source: "pois",
+    "source-layer": "poi",
+    minzoom: 14,
+    layout: 
+    paint: {
+      "circle-radius": 4,
+      "circle-color": "#b85c38",
+      "circle-stroke-color": "#ffffff",
+      "circle-stroke-width": 1
+    }
+  });
+  console.log("POIs points layer added");
+}
+
+if (!map.getLayer("pois-labels")) {
+  map.addLayer({
+    id: "pois-labels",
+    type: "symbol",
+    source: "pois",
+    "source-layer": "poi",
+    minzoom: 15,
+    layout: {
+      "text-field": ["coalesce", ["get", "name"], ""],
+      "text-size": 10,
+      "text-offset": [0, 1.1],
+      "text-anchor": "top",
+      "text-allow-overlap": false,
+      "text-ignore-placement": false
+    },
+    paint: {
+      "text-color": "#5d2b1f",
+      "text-halo-color": "rgba(255,255,255,0.95)",
+      "text-halo-width": 1.2
+    }
+  });
+  console.log("POIs labels layer added");
+}
+
+if (!map.getSource("trailheads")) {
+  map.addSource("trailheads", {
+    type: "vector",
+    tiles: [`${state.apiBase}/tiles/trailheads/{z}/{x}/{y}.mvt`],
+    minzoom: 0,
+    maxzoom: 14
+  });
+  console.log("Trailheads source added");
+}
+
+if (!map.getLayer("trailheads-symbols")) {
+  map.addLayer({
+    id: "trailheads-symbols",
+    type: "symbol",
+    source: "trailheads",
+    "source-layer": "trailheads",
+    minzoom: 13,
+    layout: {
+      "text-field": "TH",
+      "text-size": 11,
+      "text-font": ["Open Sans Bold"]
+    },
+    paint: {
+      "text-color": "#ffffff",
+      "text-halo-color": "#2d8a5f",
+      "text-halo-width": 4
+    }
+  });
+}
+
+if (!map.getLayer("trailheads-labels")) {
+  map.addLayer({
+    id: "trailheads-labels",
+    type: "symbol",
+    source: "trailheads",
+    "source-layer": "trailheads",
+    minzoom: 14,
+    layout: {
+      "text-field": ["coalesce", ["get", "name"], ""],
+      "text-size": 11,
+      "text-offset": [0, 1.2],
+      "text-anchor": "top",
+      "text-allow-overlap": false,
+      "text-ignore-placement": false
+    },
+    paint: {
+      "text-color": "#173126",
+      "text-halo-color": "rgba(255,255,255,0.95)",
+      "text-halo-width": 1.2
+    }
+  });
+  console.log("Trailheads labels layer added");
+}
+
 if (!map.__areasPopupBound && map.getLayer("areas-fill")) {
   map.on("click", "areas-fill", (event) => {
     const feature = event.features && event.features[0];
