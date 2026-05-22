@@ -1154,15 +1154,16 @@ if (!map.getLayer("pois-points")) {
     source: "pois",
     "source-layer": "poi",
     minzoom: 14,
-    layout: 
+    layout: {
+      "text-field": "i",
+      "text-size": 12
+    },
     paint: {
-      "circle-radius": 4,
-      "circle-color": "#b85c38",
-      "circle-stroke-color": "#ffffff",
-      "circle-stroke-width": 1
+      "text-color": "#b85c38",
+      "text-halo-color": "#ffffff",
+      "text-halo-width": 2
     }
   });
-  console.log("POIs points layer added");
 }
 
 if (!map.getLayer("pois-labels")) {
