@@ -932,6 +932,8 @@ function buildAreaTypeSummary(areaId) {
 
 function buildAreaPopupHtml(area) {
   const typeSummary = buildAreaTypeSummary(area.area_id);
+  const lat = area.lat ? Number(area.lat).toFixed(5) : "-";
+  const lon = area.lon ? Number(area.lon).toFixed(5) : "-";
 
   return `
     <div class="map-popup-card">
@@ -939,6 +941,7 @@ function buildAreaPopupHtml(area) {
       <p class="map-popup-description">
         ${escapeHtml(area.description || "No description available.")}
       </p>
+      <p class="map-popup-summary"><strong>Lat/Lon</strong> ${lat}, ${lon}</p>
       <div class="map-popup-facts">
         <span><strong>Drive</strong> ${escapeHtml(area.drive_time ? `${area.drive_time} min` : "-")}</span>
         <span><strong>Approach</strong> ${escapeHtml(area.approach_time ? `${area.approach_time} min` : "-")}</span>
@@ -1248,31 +1251,29 @@ if (!map.__areasPopupBound && map.getLayer("areas-fill")) {
   map.on("click", "areas-fill", (event) => {
     const feature = event.features && event.features[0];
     if (!feature) {
-        return;
-        }
-
-        const areaId = String(feature.properties.area_id);
-        const area = state.datasets.areas.find((item) => String(item.area_id) === areaId);
-        if (!area) {
-          return;
-        }
-
-        new maplibregl.Popup({
-          closeButton: true,
-          closeOnClick: true,
-          maxWidth: "320px"
-        })
-          .setLngLat(event.lngLat)
-          .setHTML(buildAreaPopupHtml(area))
-          .addTo(map);
-      });
-
-      map.__areasPopupBound = true;
-      console.log("Areas popup handler added");
+      return;
     }
-  } catch (error) {
-    console.error("renderOverlayLayers error", error);
-  }
+
+    const props = feature.properties || {};
+    const areaId = String(props.area_id || "");
+    const area = state.datasets.areas.find((item) => String(item.area_id) === areaId);
+
+    const popupArea = {
+      ...(area || {}),
+      ...props
+    };
+
+    new maplibregl.Popup({
+      closeButton: true,
+      closeOnClick: true,
+      maxWidth: "320px"
+    })
+      .setLngLat(event.lngLat)
+      .setHTML(buildAreaPopupHtml(popupArea))
+      .addTo(map);
+  });
+
+  map.__areasPopupBound = true;
 }
 
 function fitMapToOverview() {}
