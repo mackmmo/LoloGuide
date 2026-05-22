@@ -1024,8 +1024,6 @@ function renderOverlayLayers() {
       console.log("Areas outline layer added");
     }
 
-
-
 if (!map.getLayer("area-labels")) {
   map.addLayer({
     id: "area-labels",
@@ -1047,12 +1045,76 @@ if (!map.getLayer("area-labels")) {
   });
   console.log("Areas labels layer added");
 }
+    if (!map.getSource("roads")) {
+  map.addSource("roads", {
+    type: "vector",
+    tiles: [`${state.apiBase}/tiles/roads/{z}/{x}/{y}.mvt`],
+    minzoom: 0,
+    maxzoom: 14
+  });
+  console.log("Roads source added");
+}
 
-    if (!map.__areasPopupBound && map.getLayer("areas-fill")) {
-      map.on("click", "areas-fill", (event) => {
-        const feature = event.features && event.features[0];
-        if (!feature) {
-          return;
+if (!map.getLayer("roads-line")) {
+  map.addLayer({
+    id: "roads-line",
+    type: "line",
+    source: "roads",
+    "source-layer": "roads",
+    minzoom: 11,
+    paint: {
+      "line-color": "#8f8470",
+      "line-width": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        11, 1,
+        15, 3
+      ],
+      "line-opacity": 0.75
+    }
+  });
+  console.log("Roads line layer added");
+}
+
+if (!map.getSource("trails")) {
+  map.addSource("trails", {
+    type: "vector",
+    tiles: [`${state.apiBase}/tiles/trails/{z}/{x}/{y}.mvt`],
+    minzoom: 0,
+    maxzoom: 14
+  });
+  console.log("Trails source added");
+}
+
+if (!map.getLayer("trails-line")) {
+  map.addLayer({
+    id: "trails-line",
+    type: "line",
+    source: "trails",
+    "source-layer": "trails",
+    minzoom: 12,
+    paint: {
+      "line-color": "#7a5f2e",
+      "line-width": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        12, 1,
+        15, 2.5
+      ],
+      "line-dasharray": [2, 1],
+      "line-opacity": 0.8
+    }
+  });
+  console.log("Trails line layer added");
+}
+
+if (!map.__areasPopupBound && map.getLayer("areas-fill")) {
+  map.on("click", "areas-fill", (event) => {
+    const feature = event.features && event.features[0];
+    if (!feature) {
+        return;
         }
 
         const areaId = String(feature.properties.area_id);
