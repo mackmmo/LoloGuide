@@ -82,7 +82,20 @@ function init() {
 function initMap() {
   map = new maplibregl.Map({
     container: "map",
-    style: "https://api.maptiler.com/tiles/hand-drawn-hillshade/tiles.json?key=izwnMfYAP1x5LDeYc4zb",
+    style: {
+      version: 8,
+      glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+      sources: {},
+      layers: [
+        {
+          id: "background",
+          type: "background",
+          paint: {
+            "background-color": "#f5efdf"
+          }
+        }
+      ]
+    },
     center: [-114.56835793693313, 46.69852662439601],
     zoom: 11
   });
