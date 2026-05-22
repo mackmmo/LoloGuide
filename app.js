@@ -1049,13 +1049,36 @@ if (!map.getLayer("roads-line")) {
     type: "line",
     source: "roads",
     "source-layer": "roads",
-    minzoom: 0,
+    minzoom: 11,
     paint: {
-      "line-color": "#ff0000",
-      "line-width": 6,
+      "line-color": "#2f2c2c",
+      "line-width": 1,
       "line-opacity": 1
     }
   });
+}
+
+if (!map.getLayer("roads-labels")) {
+  map.addLayer({
+    id: "roads-labels",
+    type: "symbol",
+    source: "roads",
+    "source-layer": "roads",
+    minzoom: 13,
+    layout: {
+      "symbol-placement": "line",
+      "text-field": ["coalesce", ["get", "roadname"], ""],
+      "text-size": 11,
+      "text-allow-overlap": false,
+      "text-ignore-placement": false
+    },
+    paint: {
+      "text-color": "#5f5a50",
+      "text-halo-color": "rgba(255,255,255,0.9)",
+      "text-halo-width": 1
+    }
+  });
+  console.log("Road labels layer added");
 }
 
 if (!map.getSource("trails")) {
@@ -1089,6 +1112,29 @@ if (!map.getLayer("trails-line")) {
     }
   });
   console.log("Trails line layer added");
+}
+
+if (!map.getLayer("trails-labels")) {
+  map.addLayer({
+    id: "trails-labels",
+    type: "symbol",
+    source: "trails",
+    "source-layer": "trails",
+    minzoom: 13,
+    layout: {
+      "symbol-placement": "line",
+      "text-field": ["coalesce", ["get", "approach"], ""],
+      "text-size": 11,
+      "text-allow-overlap": false,
+      "text-ignore-placement": false
+    },
+    paint: {
+      "text-color": "#6c5528",
+      "text-halo-color": "rgba(255,255,255,0.9)",
+      "text-halo-width": 1
+    }
+  });
+  console.log("Trail labels layer added");
 }
 
 if (!map.__areasPopupBound && map.getLayer("areas-fill")) {
