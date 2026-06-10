@@ -1,6 +1,6 @@
 :root {
   --bg: #f5efdf;
-  --panel: rgba(255, 252, 246, 0.82);
+  --panel: rgba(255, 252, 246, 0.84);
   --panel-strong: rgba(255, 255, 255, 0.94);
   --ink: #16281f;
   --muted: #647469;
@@ -16,7 +16,7 @@
 }
 
 html {
-  height: 100%;
+  min-height: 100%;
 }
 
 body {
@@ -44,11 +44,18 @@ body::before {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: 360px minmax(0, 1fr);
   gap: 20px;
   min-height: 100vh;
   padding: 20px;
   align-items: start;
+}
+
+.sidebar-column {
+  display: grid;
+  gap: 20px;
+  align-content: start;
+  min-width: 0;
 }
 
 .panel {
@@ -64,43 +71,11 @@ body::before {
 .list-panel,
 .detail-panel,
 .map-panel {
-  padding: 20px;
-}
-
-.hero {
-  display: grid;
-  gap: 18px;
-  align-content: start;
-  position: sticky;
-  top: 20px;
-}
-
-.workspace-column {
-  display: grid;
-  gap: 20px;
-  min-width: 0;
-}
-
-.workspace-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: minmax(620px, 74vh) auto;
-  gap: 20px;
-  min-width: 0;
-  min-height: 0;
-}
-
-.results-detail-row {
-  display: grid;
-  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
-  gap: 20px;
-  min-width: 0;
-  min-height: 0;
+  padding: 22px;
 }
 
 .hero-side,
 .stats-grid,
-.controls-grid,
 .filters-panel-body,
 .filter-grid,
 .facts-grid,
@@ -113,286 +88,13 @@ body::before {
   gap: 12px;
 }
 
-.stats-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.filter-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin-top: 16px;
-}
-
-.facts-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: 14px;
-}
-
-.mode-tabs {
-  grid-template-columns: repeat(4, max-content);
-  align-items: center;
-}
-
-.map-panel {
-  min-height: 0;
-  overflow: hidden;
-}
-
-#map {
-  width: 100%;
-  height: clamp(620px, 74vh, 920px);
-  border-radius: 22px;
-  overflow: hidden;
-  background: linear-gradient(135deg, rgba(15, 141, 97, 0.14), rgba(7, 109, 75, 0.08));
-}
-
-.list-panel,
-.detail-panel {
-  min-height: 0;
-}
-
-.record-list {
-  max-height: 560px;
-  overflow: auto;
-  padding-right: 4px;
-}
-
-.controls-panel .toolbar,
-.controls-panel .section-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-input,
-select,
-button,
-textarea {
-  font: inherit;
-}
-
-input,
-select,
-textarea {
-  width: 100%;
-  padding: 12px 14px;
-  border-radius: 18px;
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.88);
-  color: var(--ink);
-}
-
-button {
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.84);
-  color: var(--ink);
-  border-radius: 18px;
-  padding: 10px 14px;
-  cursor: pointer;
-}
-
-button:hover {
-  background: rgba(255, 255, 255, 0.96);
-}
-
-.mode-tab.active {
-  background: var(--accent-soft);
-  border-color: rgba(15, 141, 97, 0.2);
-}
-
-.record-card,
-.subarea-route-card {
+.hero {
   display: grid;
-  gap: 8px;
-  text-align: left;
-  padding: 14px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.84);
-  border: 1px solid var(--line);
+  gap: 18px;
 }
 
-.record-card.active,
-.subarea-route-card.active {
-  border-color: rgba(15, 141, 97, 0.3);
-  box-shadow: 0 8px 24px rgba(15, 141, 97, 0.12);
-}
-
-.record-card small,
-.subarea-route-card small,
-.description-card,
-.stat-card small,
-.map-context-card small {
+.eyebrow,
+.muted,
+label span,
+.summary-strip small {
   color: var(--muted);
-}
-
-.description-card,
-.fact-card,
-.stat-card,
-.map-context-card {
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(22, 40, 31, 0.08);
-  border-radius: 20px;
-}
-
-.description-card,
-.map-context-card,
-.fact-card {
-  padding: 14px 16px;
-}
-
-.fact-card {
-  display: grid;
-  gap: 6px;
-}
-
-.fact-card strong {
-  font-size: 0.92rem;
-}
-
-.fact-card span {
-  color: var(--muted);
-}
-
-.stat-card {
-  padding: 14px 16px;
-}
-
-.stat-card strong {
-  display: block;
-  margin-top: 8px;
-  font-size: 1.35rem;
-}
-
-.breadcrumbs {
-  grid-template-columns: repeat(auto-fit, minmax(120px, max-content));
-}
-
-.crumb {
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid var(--line);
-}
-
-.map-toggles {
-  grid-template-columns: repeat(2, minmax(120px, max-content));
-  margin: 12px 0 16px;
-}
-
-.toggle-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid var(--line);
-}
-
-.toggle-pill input {
-  width: auto;
-  margin: 0;
-}
-
-.map-context-card strong {
-  display: block;
-  margin-top: 4px;
-  margin-bottom: 6px;
-  font-size: 1rem;
-}
-
-.map-context-card p {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.5;
-}
-
-.empty-state {
-  color: var(--muted);
-}
-
-/* Keep popup styles exactly as requested */
-.map-popup-card {
-  min-width: 220px;
-  max-width: 300px;
-  color: var(--ink);
-  font-family: "Space Grotesk", system-ui, sans-serif;
-}
-
-.map-popup-card h3 {
-  margin: 0 0 10px;
-  font-size: 1rem;
-  line-height: 1.2;
-}
-
-.map-popup-description {
-  margin: 0 0 12px;
-  color: var(--muted);
-  line-height: 1.5;
-}
-
-.map-popup-facts {
-  display: grid;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.map-popup-facts span {
-  color: var(--muted);
-  font-size: 0.92rem;
-}
-
-.map-popup-facts strong {
-  margin-right: 6px;
-  color: var(--ink);
-}
-
-.map-popup-summary {
-  margin: 0;
-  color: var(--ink);
-  font-size: 0.92rem;
-  font-weight: 600;
-}
-
-@media (max-width: 1180px) {
-  .app-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .hero {
-    position: static;
-  }
-
-  .filter-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .results-detail-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 760px) {
-  .app-shell {
-    padding: 12px;
-    gap: 12px;
-  }
-
-  .filter-grid,
-  .facts-grid,
-  .stats-grid,
-  .mode-tabs,
-  .map-toggles {
-    grid-template-columns: 1fr;
-  }
-
-  .controls-panel .toolbar,
-  .controls-panel .section-head {
-    display: block;
-  }
-
-  #map {
-    height: 56vh;
-    min-height: 360px;
-  }
-}
