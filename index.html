@@ -11,42 +11,29 @@
       rel="stylesheet"
     />
     <link
+      href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
       rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-      crossorigin=""
     />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=30" />
   </head>
   <body>
     <main class="app-shell">
-      <aside class="sidebar-column">
-        <section class="hero panel">
-          <div>
-            <p class="eyebrow">Climbing Database</p>
-            <h1>Lolo Climbing Explorer</h1>
-            <p class="lede">
-              Browse routes and places in one flow. Search by climb name, filter by sector or area,
-              and jump between route, subarea, area, and sector details without leaving the page.
-            </p>
-          </div>
+      <section class="hero panel">
+        <div>
+          <p class="eyebrow">Climbing Database</p>
+          <h1>Lolo Climbing Explorer</h1>
+          <p class="lede">
+            Browse all routes or search and filter by name, grade, type, and location. View route details,
+            and jump between route, subarea, area, and sector details without leaving the page.
+          </p>
+        </div>
+        <div class="hero-side">
+          <p id="status-banner" class="status-banner">Loading climbing data...</p>
+          <div id="stats-grid" class="stats-grid"></div>
+        </div>
+      </section>
 
-          <div class="hero-side">
-            <label>
-              <span>Backend URL</span>
-              <input
-                id="backend-base"
-                type="url"
-                value="https://lolo-app-1.onrender.com"
-                placeholder="https://lolo-app-1.onrender.com"
-              />
-            </label>
-            <button id="refresh-app" class="action">Reload Data</button>
-            <p id="status-banner" class="status-banner">Loading climbing data from the backend...</p>
-            <div id="stats-grid" class="stats-grid"></div>
-          </div>
-        </section>
-
+      <section class="controls-grid">
         <section class="panel controls-panel">
           <div class="toolbar">
             <div class="mode-tabs" id="mode-tabs">
@@ -63,38 +50,114 @@
 
           <div id="filters-panel-body" class="filters-panel-body">
             <div class="filter-grid">
-            <label class="full-span">
-              <span>Search</span>
-              <input id="search-input" type="text" placeholder="Route, grade, type, area, subarea..." />
-            </label>
-            <label>
-              <span>Sector</span>
-              <select id="sector-filter"></select>
-            </label>
-            <label>
-              <span>Area</span>
-              <select id="area-filter"></select>
-            </label>
-            <label>
-              <span>Subarea</span>
-              <select id="subarea-filter"></select>
-            </label>
-            <label>
-              <span>Type</span>
-              <select id="type-filter"></select>
-            </label>
-            <label>
-              <span>Sort</span>
-              <select id="sort-filter">
-                <option value="default">Default</option>
-                <option value="name">Name A-Z</option>
-                <option value="grade">Grade</option>
-                <option value="stars">Stars</option>
-                <option value="height">Height</option>
-              </select>
-            </label>
+              <label class="full-span">
+                <span>Search</span>
+                <input id="search-input" type="text" placeholder="Route, grade, type, area, subarea..." />
+              </label>
+              <label>
+                <span>Sector</span>
+                <select id="sector-filter"></select>
+              </label>
+              <label>
+                <span>Area</span>
+                <select id="area-filter"></select>
+              </label>
+              <label>
+                <span>Subarea</span>
+                <select id="subarea-filter"></select>
+              </label>
+              <label>
+                <span>Type</span>
+                <select id="type-filter"></select>
+              </label>
+              <label>
+                <span>Sort</span>
+                <select id="sort-filter">
+                  <option value="default">Default</option>
+                  <option value="name">Name A-Z</option>
+                  <option value="grade">Grade</option>
+                  <option value="stars">Stars</option>
+                  <option value="height">Height</option>
+                </select>
+              </label>
             </div>
 
             <div class="summary-strip">
+              <div>
+                <small>Viewing</small>
+                <strong id="active-mode-label">Routes</strong>
+              </div>
+              <div>
+                <small>Matches</small>
+                <strong id="result-count">0</strong>
+              </div>
+              <div>
+                <small>Selection</small>
+                <strong id="selection-label">None</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="panel map-panel map-panel-top">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Map Explorer</p>
+            <h2>Location Preview</h2>
+          </div>
+          <p id="map-meta" class="muted">Select a route or place to center the map.</p>
+        </div>
+        <div class="map-toggles">
+          <label class="toggle-pill">
+            <input id="toggle-sectors" type="checkbox" />
+            <span>Sectors</span>
+          </label>
+          <label class="toggle-pill">
+            <input id="toggle-areas" type="checkbox" />
+            <span>Areas</span>
+          </label>
+        </div>
+        <div class="map-context-card">
+          <small>Map Focus</small>
+          <strong id="map-context-title">Nothing selected</strong>
+          <p id="map-context-body">Choose a route, subarea, area, or sector to see what the map is showing.</p>
+        </div>
+        <div id="map"></div>
+      </section>
+
+      <section class="workspace-grid">
+        <section class="panel list-panel">
+          <div class="section-head">
             <div>
-              <small>Viewing</small>
+              <p class="eyebrow">Browse</p>
+              <h2 id="list-title">Routes</h2>
+            </div>
+            <p id="list-meta" class="muted">0 results</p>
+          </div>
+          <div id="record-list" class="record-list"></div>
+        </section>
+
+        <section class="panel detail-panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Detail</p>
+              <h2 id="detail-title">Pick a record</h2>
+            </div>
+            <p id="detail-subtitle" class="muted">Details and location context appear here.</p>
+          </div>
+
+          <div id="detail-breadcrumbs" class="breadcrumbs"></div>
+          <div id="subarea-route-strip" class="subarea-route-strip"></div>
+          <div id="detail-description" class="description-card empty-state">
+            Select a route, subarea, area, or sector to explore its details.
+          </div>
+          <div id="detail-facts" class="facts-grid"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <script src="./app.js?v=30"></script>
+  </body>
+</html>
