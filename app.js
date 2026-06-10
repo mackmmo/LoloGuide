@@ -99,19 +99,6 @@ function initMap() {
   });
 }
 
-  map.addControl(new maplibregl.NavigationControl(), "top-left");
-
-  map.on("load", () => {
-    console.log("Map loaded");
-    renderOverlayLayers();
-  });
-
-  map.on("error", (event) => {
-    console.error("MapLibre error", event);
-  });
-
-
-
 function bindEvents() {
   el.resetAll.addEventListener("click", resetAll);
   el.toggleFilters.addEventListener("click", () => {
