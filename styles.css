@@ -39,10 +39,10 @@ body::before {
 }
 
 .app-shell {
-  width: min(1380px, calc(100% - 28px));
-  margin: 20px auto 44px;
   display: grid;
-  gap: 18px;
+  grid-template-columns: 380px minmax(0, 1fr);
+  height: 100vh;
+  overflow: hidden;
 }
 
 .panel {
@@ -507,8 +507,11 @@ label {
   }
 
   #map {
-    min-height: 340px;
-  }
+  height: clamp(560px, 78vh, 920px);
+  border-radius: 22px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(15, 141, 97, 0.14), rgba(7, 109, 75, 0.08));
+}
 }
 
 .map-popup-card {

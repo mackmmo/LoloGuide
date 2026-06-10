@@ -1051,7 +1051,7 @@ if (!map.getLayer("roads-line")) {
     minzoom: 11,
     paint: {
       "line-color": "#2f2c2c",
-      "line-width": 1,
+      "line-width": 2,
       "line-opacity": 1
     }
   });
