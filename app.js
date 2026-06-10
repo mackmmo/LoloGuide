@@ -109,7 +109,7 @@ function initMap() {
   map.on("error", (event) => {
     console.error("MapLibre error", event);
   });
-}
+
 
 
 function bindEvents() {
