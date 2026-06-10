@@ -40,9 +40,9 @@ body::before {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 380px minmax(0, 1fr);
-  height: 100vh;
-  overflow: hidden;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 20px;
+  min-height: 100vh;
 }
 
 .panel {
@@ -84,7 +84,18 @@ body::before {
 }
 
 .workspace-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(620px, 72vh) auto;
+  gap: 20px;
+  min-height: 0;
+}
+
+.results-detail-row {
+  display: grid;
   grid-template-columns: minmax(320px, 430px) 1fr;
+  gap: 20px;
+  min-height: 0;
 }
 
 .stats-grid {
@@ -467,7 +478,7 @@ label {
 }
 
 #map {
-  min-height: 460px;
+  height: clamp(560px, 78vh, 920px);
   border-radius: 22px;
   overflow: hidden;
   background: linear-gradient(135deg, rgba(15, 141, 97, 0.14), rgba(7, 109, 75, 0.08));
