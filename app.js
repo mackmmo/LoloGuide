@@ -82,23 +82,22 @@ function init() {
 function initMap() {
   map = new maplibregl.Map({
     container: "map",
-    style: {
-      version: 8,
-      glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
-      sources: {},
-      layers: [
-        {
-          id: "background",
-          type: "background",
-          paint: {
-            "background-color": "#f5efdf"
-          }
-        }
-      ]
-    },
+    style: "https://api.maptiler.com/maps/019eb30f-c1f6-7d3b-b3b9-d2c198fb5d44/style.json?key=izwnMfYAP1x5LDeYc4zb",
     center: [-114.56835793693313, 46.69852662439601],
     zoom: 11
   });
+
+  map.addControl(new maplibregl.NavigationControl(), "top-left");
+
+  map.on("load", () => {
+    console.log("Map loaded");
+    renderOverlayLayers();
+  });
+
+  map.on("error", (event) => {
+    console.error("MapLibre error", event);
+  });
+}
 
   map.addControl(new maplibregl.NavigationControl(), "top-left");
 
