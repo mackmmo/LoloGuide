@@ -364,7 +364,6 @@ function render() {
   renderFilterCollapse();
   renderFilters();
   renderStats();
-  renderMapToggles();
   renderList();
   renderDetail();
 }
