@@ -46,8 +46,6 @@ const el = {
   activeModeLabel: document.querySelector("#active-mode-label"),
   resultCount: document.querySelector("#result-count"),
   selectionLabel: document.querySelector("#selection-label"),
-  listTitle: document.querySelector("#list-title"),
-  listMeta: document.querySelector("#list-meta"),
   recordList: document.querySelector("#record-list"),
   detailTitle: document.querySelector("#detail-title"),
   detailSubtitle: document.querySelector("#detail-subtitle"),
@@ -55,11 +53,8 @@ const el = {
   subareaRouteStrip: document.querySelector("#subarea-route-strip"),
   detailFacts: document.querySelector("#detail-facts"),
   detailDescription: document.querySelector("#detail-description"),
-  mapMeta: document.querySelector("#map-meta"),
   mapContextTitle: document.querySelector("#map-context-title"),
-  mapContextBody: document.querySelector("#map-context-body"),
-  toggleSectors: document.querySelector("#toggle-sectors"),
-  toggleAreas: document.querySelector("#toggle-areas")
+  mapContextBody: document.querySelector("#map-context-body")
 };
 
 let map = null;
@@ -126,70 +121,54 @@ function bindEvents() {
     });
   });
 
-  el.searchInput.addEventListener("input", (event) => {
-    state.filters.search = event.target.value;
-    syncSelectedRecord();
-    render();
-  });
+  el.searchInput.addEventListener("input", async (event) => {
+  state.filters.search = event.target.value;
+  await loadRoutesFromBackend();
+});
 
-  el.sectorFilter.addEventListener("change", (event) => {
-    state.filters.sectorId = event.target.value;
-    if (state.filters.sectorId && !areaMatchesSector(state.filters.areaId, state.filters.sectorId)) {
-      state.filters.areaId = "";
-      state.filters.subareaId = "";
-    }
-    syncSelectedRecord();
-    render();
-  });
+  el.sectorFilter.addEventListener("change", async (event) => {
+  state.filters.sectorId = event.target.value;
+  if (state.filters.sectorId && !areaMatchesSector(state.filters.areaId, state.filters.sectorId)) {
+    state.filters.areaId = "";
+    state.filters.subareaId = "";
+  }
+  await loadRoutesFromBackend();
+});
 
-  el.areaFilter.addEventListener("change", (event) => {
-    state.filters.areaId = event.target.value;
-    if (state.filters.areaId) {
-      const area = areaById.get(state.filters.areaId);
+el.areaFilter.addEventListener("change", async (event) => {
+  state.filters.areaId = event.target.value;
+  if (state.filters.areaId) {
+    const area = areaById.get(state.filters.areaId);
+    state.filters.sectorId = area ? String(area.sector) : state.filters.sectorId;
+  }
+  if (state.filters.subareaId && !subareaMatchesArea(state.filters.subareaId, state.filters.areaId)) {
+    state.filters.subareaId = "";
+  }
+  await loadRoutesFromBackend();
+});
+
+el.subareaFilter.addEventListener("change", async (event) => {
+  state.filters.subareaId = event.target.value;
+  if (state.filters.subareaId) {
+    const subarea = subareaById.get(state.filters.subareaId);
+    if (subarea) {
+      state.filters.areaId = String(subarea.area);
+      const area = areaById.get(String(subarea.area));
       state.filters.sectorId = area ? String(area.sector) : state.filters.sectorId;
     }
-    if (state.filters.subareaId && !subareaMatchesArea(state.filters.subareaId, state.filters.areaId)) {
-      state.filters.subareaId = "";
-    }
-    syncSelectedRecord();
-    render();
-  });
+  }
+  await loadRoutesFromBackend();
+});
 
-  el.subareaFilter.addEventListener("change", (event) => {
-    state.filters.subareaId = event.target.value;
-    if (state.filters.subareaId) {
-      const subarea = subareaById.get(state.filters.subareaId);
-      if (subarea) {
-        state.filters.areaId = String(subarea.area);
-        const area = areaById.get(String(subarea.area));
-        state.filters.sectorId = area ? String(area.sector) : state.filters.sectorId;
-      }
-    }
-    syncSelectedRecord();
-    render();
-  });
+el.typeFilter.addEventListener("change", async (event) => {
+  state.filters.type = event.target.value;
+  await loadRoutesFromBackend();
+});
 
-  el.typeFilter.addEventListener("change", (event) => {
-    state.filters.type = event.target.value;
-    syncSelectedRecord();
-    render();
-  });
-
-  el.sortFilter.addEventListener("change", (event) => {
-    state.filters.sort = event.target.value;
-    syncSelectedRecord();
-    render();
-  });
-
-  el.toggleSectors.addEventListener("change", (event) => {
-    state.overlays.sectors = event.target.checked;
-    renderOverlayLayers();
-  });
-
-  el.toggleAreas.addEventListener("change", (event) => {
-    state.overlays.areas = event.target.checked;
-    renderOverlayLayers();
-  });
+el.sortFilter.addEventListener("change", async (event) => {
+  state.filters.sort = event.target.value;
+  await loadRoutesFromBackend();
+});
 }
 
 async function loadAllData() {
@@ -197,46 +176,85 @@ async function loadAllData() {
   state.loadErrors = {};
   renderStatus();
 
-  try {
-    const endpoints = ["sectors", "areas", "subareas", "routes"];
-    const results = await Promise.all(
-      endpoints.map(async (name) => {
-        const response = await fetchJson(`${state.apiBase}/${name}/`);
-        return [name, response];
-      })
-    );
+  const endpoints = ["sectors", "areas", "subareas"];
+  const results = await Promise.all(
+    endpoints.map(async (name) => {
+      const response = await fetchJson(`${state.apiBase}/${name}/`);
+      return [name, response];
+    })
+  );
 
-    const nextDatasets = {
-      sectors: [],
-      areas: [],
-      subareas: [],
-      routes: []
-    };
-    const nextErrors = {};
+  const nextDatasets = {
+    sectors: [],
+    areas: [],
+    subareas: []
+  };
+  const nextErrors = {};
 
-    results.forEach(([name, result]) => {
-      if (result.ok) {
-        nextDatasets[name] = Array.isArray(result.data) ? result.data : [];
-        return;
-      }
-      nextErrors[name] = result.error;
-    });
+  results.forEach(([name, result]) => {
+    if (result.ok) {
+      nextDatasets[name] = Array.isArray(result.data) ? result.data : [];
+      return;
+    }
+    nextErrors[name] = result.error;
+  });
 
-    state.datasets.sectors = nextDatasets.sectors;
-    state.datasets.areas = nextDatasets.areas;
-    state.datasets.subareas = nextDatasets.subareas;
-    state.datasets.routes = nextDatasets.routes;
-    state.loadErrors = nextErrors;
-    rebuildIndexes();
-  } catch (error) {
-    console.error("loadAllData error", error);
-    state.loadErrors.general = error.message || String(error);
-  } finally {
+  state.datasets.sectors = nextDatasets.sectors;
+  state.datasets.areas = nextDatasets.areas;
+  state.datasets.subareas = nextDatasets.subareas;
+  state.loadErrors = nextErrors;
+  rebuildIndexes();
+
+  state.isLoading = false;
+  await loadRoutesFromBackend();
+  fitMapToOverview();
+}
+
+function buildRoutesQuery() {
+  const params = new URLSearchParams();
+
+  if (state.filters.search) params.set("search", state.filters.search);
+  if (state.filters.sectorId) params.set("sector", state.filters.sectorId);
+  if (state.filters.areaId) params.set("area", state.filters.areaId);
+  if (state.filters.subareaId) params.set("subarea", state.filters.subareaId);
+  if (state.filters.type) params.set("type", state.filters.type);
+
+  const orderingMap = {
+    name: "name",
+    grade: "grade_index",
+    stars: "star_rating",
+    height: "height"
+  };
+
+  if (state.filters.sort && state.filters.sort !== "default") {
+    params.set("ordering", orderingMap[state.filters.sort] || state.filters.sort);
+  }
+
+  return params.toString();
+}
+
+async function loadRoutesFromBackend() {
+  state.isLoading = true;
+  renderStatus();
+
+  const query = buildRoutesQuery();
+  const url = `${state.apiBase}/routes/${query ? `?${query}` : ""}`;
+  const result = await fetchJson(url);
+
+  if (!result.ok) {
+    state.datasets.routes = [];
+    state.loadErrors.routes = result.error;
     state.isLoading = false;
     syncSelectedRecord();
     render();
-    fitMapToOverview();
+    return;
   }
+
+  state.datasets.routes = Array.isArray(result.data) ? result.data.map(enrichRoute) : [];
+  delete state.loadErrors.routes;
+  state.isLoading = false;
+  syncSelectedRecord();
+  render();
 }
 
 async function fetchJson(url) {
@@ -321,7 +339,7 @@ function enrichRoute(route) {
   };
 }
 
-function resetAll() {
+async function resetAll() {
   state.mode = "routes";
   state.filters = {
     search: "",
@@ -334,7 +352,10 @@ function resetAll() {
   state.contextRecord = null;
   state.contextMode = null;
   state.selected = null;
-  render();
+
+  renderModeTabs();
+  renderFilters();
+  await loadRoutesFromBackend();
 }
 
 function render() {
@@ -348,10 +369,6 @@ function render() {
   renderDetail();
 }
 
-function renderMapToggles() {
-  el.toggleSectors.checked = state.overlays.sectors;
-  el.toggleAreas.checked = state.overlays.areas;
-}
 
 function renderStatus() {
   const failures = Object.entries(state.loadErrors);
@@ -442,24 +459,14 @@ function statCard(label, value) {
 
 function getVisibleRecords() {
   const source = state.datasets[state.mode] || [];
+
+  if (state.mode === "routes") {
+    return source;
+  }
+
   const search = state.filters.search.toLowerCase();
 
-  let records = source.filter((record) => {
-    if (state.mode === "routes") {
-      if (state.filters.sectorId && String(record.sector) !== state.filters.sectorId) {
-        return false;
-      }
-      if (state.filters.areaId && String(record.area) !== state.filters.areaId) {
-        return false;
-      }
-      if (state.filters.subareaId && String(record.subarea) !== state.filters.subareaId) {
-        return false;
-      }
-      if (state.filters.type && String(record.type) !== state.filters.type) {
-        return false;
-      }
-    }
-
+  const records = source.filter((record) => {
     if (state.mode === "subareas") {
       if (state.filters.sectorId && String(record.sector) !== state.filters.sectorId) {
         return false;
@@ -535,8 +542,8 @@ function renderList() {
   el.activeModeLabel.textContent = capitalize(state.mode);
   el.resultCount.textContent = String(records.length);
   el.selectionLabel.textContent = state.contextRecord ? recordTitle(state.contextRecord) : state.selected ? recordTitle(state.selected) : "None";
-  el.listTitle.textContent = capitalize(state.mode);
-  el.listMeta.textContent = `${records.length} result${records.length === 1 ? "" : "s"}`;
+  el.detailTitle.textContent = capitalize(state.mode);
+  el.detailSubtitle.textContent = `${records.length} result${records.length === 1 ? "" : "s"}`;
 
   if (!records.length) {
     el.recordList.innerHTML = `<div class="description-card empty-state">No ${state.mode} match the current filters.</div>`;
@@ -570,13 +577,12 @@ function renderDetail() {
   const detailMode = state.contextMode || state.mode;
 
   if (!record) {
-    el.detailTitle.textContent = "Pick a record";
+    el.detailTitle.textContent = "Search";
     el.detailSubtitle.textContent = "Details and location context appear here.";
     el.detailBreadcrumbs.innerHTML = "";
     el.subareaRouteStrip.innerHTML = "";
     el.detailFacts.innerHTML = "";
     el.detailDescription.innerHTML = `<strong>Description</strong><p>Select a route, subarea, area, or sector to explore its details.</p>`;
-    el.mapMeta.textContent = "Overview of the Lolo climbing area with sectors and areas.";
     el.mapContextTitle.textContent = "Lolo Overview";
     el.mapContextBody.textContent = "Sectors and areas are visible by default so you can start by orienting yourself on the map.";
     updateMap(null);
