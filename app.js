@@ -53,7 +53,6 @@ const el = {
   subareaRouteStrip: document.querySelector("#subarea-route-strip"),
   detailFacts: document.querySelector("#detail-facts"),
   detailDescription: document.querySelector("#detail-description"),
-  mapContextTitle: document.querySelector("#map-context-title"),
   mapContextBody: document.querySelector("#map-context-body")
 };
 
@@ -581,9 +580,6 @@ function renderDetail() {
     el.detailBreadcrumbs.innerHTML = "";
     el.subareaRouteStrip.innerHTML = "";
     el.detailFacts.innerHTML = "";
-    el.detailDescription.innerHTML = `<strong>Description</strong><p>Select a route, subarea, area, or sector to explore its details.</p>`;
-    el.mapContextTitle.textContent = "Lolo Overview";
-    el.mapContextBody.textContent = "Sectors and areas are visible by default so you can start by orienting yourself on the map.";
     updateMap(null);
     return;
   }

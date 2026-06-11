@@ -14,10 +14,10 @@
       href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=36" />
+    <link rel="stylesheet" href="./styles.css?v=37" />
   </head>
   <body>
-    <main class="app-shell app-shell--map-first">
+  <main class="app-shell app-shell--map-first">
   <aside class="sidebar-column">
     <section class="panel controls-panel">
       <div class="toolbar">
@@ -28,7 +28,6 @@
           <button class="mode-tab" data-mode="sectors">Sectors</button>
         </div>
         <div class="toolbar-actions">
-          <button id="toggle-filters" class="ghost">Hide Filters</button>
           <button id="reset-all" class="ghost">Reset</button>
         </div>
       </div>
@@ -105,28 +104,15 @@
     </section>
   </aside>
 
-  <section class="map-column">
-    <section class="panel map-panel">
-      <div class="section-head">
-        <div>
-          <p class="eyebrow">Map</p>
-          <h2>Map Overview</h2>
-        </div>
-      </div>
-
-        <div class="map-context-card">
-          <small>Map Focus</small>
-          <strong id="map-context-title">Nothing selected</strong>
-          <p id="map-context-body">Choose a route, subarea, area, or sector to see what the map is showing.</p>
-        </div>
-      </div>
-
-      <div id="map"></div>
-    </section>
-  </section>
+<div class="section-head">
+  <div>
+    <h2>Lolo Map</h2>
+    <p class="muted">Click the areas for an overview popup.</p>
+  </div>
+</div>
 </main>
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="./app.js?v=36"></script>
+<script src="./app.js?v=37"></script>
 </body>
 </html>
