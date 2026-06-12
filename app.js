@@ -127,6 +127,92 @@ function initMap() {
   await loadRoutesFromBackend();
 });
 
+function bindEvents() {
+  el.resetAll.addEventListener("click", resetAll);
+
+  el.modeTabs.forEach((button) => {
+    button.addEventListener("click", () => {
+      state.mode = button.dataset.mode;
+      state.contextRecord = null;
+      state.contextMode = null;
+
+      if (button.dataset.mode === "routes") {
+        state.filters.sectorId = "";
+        state.filters.areaId = "";
+        state.filters.subareaId = "";
+        state.filters.type = "";
+        state.filters.search = "";
+      }
+
+      if (button.dataset.mode === "subareas" || button.dataset.mode === "areas") {
+        state.filters.subareaId = "";
+      }
+
+      state.selected = null;
+      render();
+    });
+  });
+
+  el.searchInput.addEventListener("input", async (event) => {
+    state.filters.search = event.target.value;
+    await loadRoutesFromBackend();
+  });
+
+  el.sectorFilter.addEventListener("change", async (event) => {
+    state.filters.sectorId = event.target.value;
+
+    if (state.filters.sectorId && !areaMatchesSector(state.filters.areaId, state.filters.sectorId)) {
+      state.filters.areaId = "";
+      state.filters.subareaId = "";
+    }
+
+    renderFilters();
+    await loadRoutesFromBackend();
+  });
+
+  el.areaFilter.addEventListener("change", async (event) => {
+    state.filters.areaId = event.target.value;
+
+    if (state.filters.areaId) {
+      const area = areaById.get(state.filters.areaId);
+      state.filters.sectorId = area ? String(area.sector) : state.filters.sectorId;
+    }
+
+    if (state.filters.subareaId && !subareaMatchesArea(state.filters.subareaId, state.filters.areaId)) {
+      state.filters.subareaId = "";
+    }
+
+    renderFilters();
+    await loadRoutesFromBackend();
+  });
+
+  el.subareaFilter.addEventListener("change", async (event) => {
+    state.filters.subareaId = event.target.value;
+
+    if (state.filters.subareaId) {
+      const subarea = subareaById.get(state.filters.subareaId);
+      if (subarea) {
+        state.filters.areaId = String(subarea.area);
+        const area = areaById.get(String(subarea.area));
+        state.filters.sectorId = area ? String(area.sector) : state.filters.sectorId;
+      }
+    }
+
+    renderFilters();
+    await loadRoutesFromBackend();
+  });
+
+  el.typeFilter.addEventListener("change", async (event) => {
+    state.filters.type = event.target.value;
+    await loadRoutesFromBackend();
+  });
+
+  el.sortFilter.addEventListener("change", async (event) => {
+    state.filters.sort = event.target.value;
+    await loadRoutesFromBackend();
+  });
+}
+
 el.areaFilter.addEventListener("change", async (event) => {
   state.filters.areaId = event.target.value;
   if (state.filters.areaId) {
@@ -353,7 +439,6 @@ async function resetAll() {
 function render() {
   renderStatus();
   renderModeTabs();
-  renderFilterCollapse();
   renderFilters();
   renderStats();
   renderList();
