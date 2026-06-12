@@ -34,7 +34,6 @@ const el = {
   statusBanner: document.querySelector("#status-banner"),
   statsGrid: document.querySelector("#stats-grid"),
   resetAll: document.querySelector("#reset-all"),
-  toggleFilters: document.querySelector("#toggle-filters"),
   filtersPanelBody: document.querySelector("#filters-panel-body"),
   modeTabs: [...document.querySelectorAll(".mode-tab")],
   searchInput: document.querySelector("#search-input"),
@@ -93,12 +92,6 @@ function initMap() {
   });
 }
 
-function bindEvents() {
-  el.resetAll.addEventListener("click", resetAll);
-  el.toggleFilters.addEventListener("click", () => {
-    state.filtersCollapsed = !state.filtersCollapsed;
-    renderFilterCollapse();
-  });
 
   el.modeTabs.forEach((button) => {
     button.addEventListener("click", () => {
