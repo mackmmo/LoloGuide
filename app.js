@@ -161,7 +161,7 @@ el.sortFilter.addEventListener("change", async (event) => {
   state.filters.sort = event.target.value;
   await loadRoutesFromBackend();
 });
-}
+
 
 async function loadAllData() {
   state.isLoading = true;
@@ -383,10 +383,6 @@ function renderModeTabs() {
   });
 }
 
-function renderFilterCollapse() {
-  el.filtersPanelBody.classList.toggle("is-collapsed", state.filtersCollapsed);
-  el.toggleFilters.textContent = state.filtersCollapsed ? "Show Filters" : "Hide Filters";
-}
 
 function renderFilters() {
   populateSelect(el.sectorFilter, "All sectors", state.datasets.sectors, "sector_id", "name", state.filters.sectorId);
