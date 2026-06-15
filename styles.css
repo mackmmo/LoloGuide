@@ -39,19 +39,19 @@ body::before {
 }
 
 .app-shell.app-shell--map-first {
-  width: min(1700px, calc(100% - 28px));
-  height: calc(100vh - 40px);
-  margin: 20px auto;
+  width: min(1700px, calc(100% - 24px));
+  min-height: calc(100vh - 24px);
+  margin: 12px auto;
   display: grid;
   grid-template-columns: 420px minmax(0, 1fr);
-  gap: 18px;
+  gap: 16px;
   align-items: stretch;
 }
 
 .sidebar-column {
   display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 18px;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 16px;
   min-width: 0;
   min-height: 0;
 }
@@ -68,7 +68,7 @@ body::before {
 .results-panel {
   display: grid;
   grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
-  gap: 14px;
+  gap: 12px;
   min-height: 0;
   overflow: hidden;
 }
@@ -86,7 +86,11 @@ body::before {
 .list-panel,
 .detail-panel,
 .map-panel {
-  padding: 24px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .hero {
@@ -300,6 +304,7 @@ label {
   min-height: 0;
   overflow: auto;
   padding-right: 4px;
+  margin-top: 0;
 }
 
 .record-card {
@@ -507,7 +512,7 @@ label {
 #map {
   width: 100%;
   height: 100%;
-  min-height: 0;
+  min-height: 420px;
   border-radius: 22px;
   overflow: hidden;
   background: linear-gradient(135deg, rgba(15, 141, 97, 0.14), rgba(7, 109, 75, 0.08));
@@ -515,9 +520,8 @@ label {
 
 .map-panel {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 16px;
-  height: calc(100vh - 40px);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
   min-height: 0;
   overflow: hidden;
 }
@@ -529,7 +533,7 @@ label {
 @media (max-width: 1180px) {
   .app-shell.app-shell--map-first {
     width: min(100% - 18px, 100%);
-    height: auto;
+    min-height: auto;
     margin: 18px auto;
     grid-template-columns: 1fr;
   }
@@ -551,11 +555,11 @@ label {
 
   #map {
     height: 56vh;
-    min-height: 360px;
+    min-height: 320px;
   }
 
   .record-list {
-    max-height: 280px;
+    max-height: 320px;
   }
 }
 
@@ -579,8 +583,8 @@ label {
   }
 
   #map {
-    height: 52vh;
-    min-height: 360px;
+    height: 42vh;
+    min-height: 260px;
   }
 
   .record-list {
@@ -629,3 +633,14 @@ label {
   font-size: 0.92rem;
   font-weight: 600;
 }
+.results-panel .section-head {
+  align-items: start;
+  margin-bottom: 0;
+}
+
+.results-panel .section-head p {
+  margin-bottom: 0;
+}
+
+
+
