@@ -4,7 +4,6 @@ function render() {
   renderFilters();
   renderStats();
   renderList();
-  renderDetail();
 }
 
 function renderStatus() {
@@ -205,27 +204,7 @@ function renderRecordCard(record) {
 }
 
 function renderDetail() {
-  const record = state.contextRecord || state.selected;
-  const detailMode = state.contextMode || state.mode;
-
-  if (!record) {
-    el.detailTitle.textContent = "Search";
-    el.detailSubtitle.textContent = "Details and location context appear here.";
-    el.detailBreadcrumbs.innerHTML = "";
-    el.subareaRouteStrip.innerHTML = "";
-    el.detailFacts.innerHTML = "";
-    updateMap(null);
-    return;
-  }
-
-  el.detailTitle.textContent = recordTitle(record);
-  el.detailSubtitle.textContent = recordMeta(record, detailMode);
-  el.detailBreadcrumbs.innerHTML = buildBreadcrumbs(record).join("");
-  bindBreadcrumbs();
-  renderContextStrip(record, detailMode);
-  el.detailFacts.innerHTML = detailFacts(record, detailMode).map(renderFact).join("");
-  el.detailDescription.innerHTML = `<strong>Description</strong><p>${escapeHtml(record.description || "No description available.")}</p>`;
-  updateMap(record);
+  return;
 }
 
 function renderContextStrip(record, detailMode = state.mode) {

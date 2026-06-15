@@ -14,120 +14,113 @@
       href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=45" />
+    <link rel="stylesheet" href="./styles.css?v=46" />
   </head>
   <body>
-  <main class="app-shell app-shell--map-first">
-  <aside class="sidebar-column">
-    <section class="panel controls-panel">
-      <div class="toolbar">
-        <div class="mode-tabs" id="mode-tabs">
-          <button class="mode-tab active" data-mode="routes">Routes</button>
-          <button class="mode-tab" data-mode="subareas">Subareas</button>
-          <button class="mode-tab" data-mode="areas">Areas</button>
-          <button class="mode-tab" data-mode="sectors">Sectors</button>
-        </div>
-        <div class="toolbar-actions">
-          <button id="reset-all" class="ghost">Reset</button>
-        </div>
-      </div>
-
-      <p id="status-banner" class="status-banner">Loading climbing data...</p>
-
-      <div id="filters-panel-body" class="filters-panel-body">
-        <div class="filter-grid">
-          <label class="full-span">
-            <span>Search</span>
-            <input id="search-input" type="text" placeholder="Route, grade, type, area, subarea..." />
-          </label>
-          <label>
-            <span>Sector</span>
-            <select id="sector-filter"></select>
-          </label>
-          <label>
-            <span>Area</span>
-            <select id="area-filter"></select>
-          </label>
-          <label>
-            <span>Subarea</span>
-            <select id="subarea-filter"></select>
-          </label>
-          <label>
-            <span>Type</span>
-            <select id="type-filter"></select>
-          </label>
-          <label>
-            <span>Sort</span>
-            <select id="sort-filter">
-              <option value="default">Default</option>
-              <option value="name">Name A-Z</option>
-              <option value="grade">Grade</option>
-              <option value="stars">Stars</option>
-              <option value="height">Height</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="summary-strip">
-          <div>
-            <small>Viewing</small>
-            <strong id="active-mode-label">Routes</strong>
+    <main class="app-shell app-shell--map-first">
+      <aside class="sidebar-column">
+        <section class="panel controls-panel">
+          <div class="toolbar">
+            <div class="mode-tabs" id="mode-tabs">
+              <button class="mode-tab active" data-mode="routes">Routes</button>
+              <button class="mode-tab" data-mode="subareas">Subareas</button>
+              <button class="mode-tab" data-mode="areas">Areas</button>
+              <button class="mode-tab" data-mode="sectors">Sectors</button>
+            </div>
+            <div class="toolbar-actions">
+              <button id="reset-all" class="ghost">Reset</button>
+            </div>
           </div>
-          <div>
-            <small>Matches</small>
-            <strong id="result-count">0</strong>
+
+          <p id="status-banner" class="status-banner">Loading climbing data...</p>
+
+          <div id="filters-panel-body" class="filters-panel-body">
+            <div class="filter-grid">
+              <label class="full-span">
+                <span>Search</span>
+                <input id="search-input" type="text" placeholder="Route, grade, type, area, subarea..." />
+              </label>
+              <label>
+                <span>Sector</span>
+                <select id="sector-filter"></select>
+              </label>
+              <label>
+                <span>Area</span>
+                <select id="area-filter"></select>
+              </label>
+              <label>
+                <span>Subarea</span>
+                <select id="subarea-filter"></select>
+              </label>
+              <label>
+                <span>Type</span>
+                <select id="type-filter"></select>
+              </label>
+              <label>
+                <span>Sort</span>
+                <select id="sort-filter">
+                  <option value="default">Default</option>
+                  <option value="name">Name A-Z</option>
+                  <option value="grade">Grade</option>
+                  <option value="stars">Stars</option>
+                  <option value="height">Height</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="summary-strip">
+              <div>
+                <small>Viewing</small>
+                <strong id="active-mode-label">Routes</strong>
+              </div>
+              <div>
+                <small>Matches</small>
+                <strong id="result-count">0</strong>
+              </div>
+              <div>
+                <small>Selection</small>
+                <strong id="selection-label">None</strong>
+              </div>
+            </div>
           </div>
-          <div>
-            <small>Selection</small>
-            <strong id="selection-label">None</strong>
+        </section>
+
+        <section class="panel results-panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Results</p>
+              <h2 id="detail-title">Routes</h2>
+            </div>
+            <p id="detail-subtitle" class="muted">All matching routes appear here.</p>
           </div>
-        </div>
-      </div>
-    </section>
 
-    <section class="panel results-panel">
-      <div class="section-head">
-        <div>
-          <p class="eyebrow">Results</p>
-          <h2 id="detail-title">Routes</h2>
-        </div>
-        <p id="detail-subtitle" class="muted">All matching routes appear here.</p>
-      </div>
+          <div id="record-list" class="record-list"></div>
+        </section>
+      </aside>
 
-      <div id="detail-breadcrumbs" class="breadcrumbs"></div>
-      <div id="subarea-route-strip" class="subarea-route-strip"></div>
-      <div id="record-list" class="record-list"></div>
-      <div id="detail-description" class="description-card empty-state">
-        Select a route, subarea, area, or sector to explore its details.
-      </div>
-      <div id="detail-facts" class="facts-grid"></div>
-    </section>
-</aside>
+      <section class="map-column">
+        <section class="panel map-panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Map</p>
+              <h2>Lolo Map</h2>
+              <p class="muted">Click the areas for an overview popup.</p>
+            </div>
+          </div>
 
-<section class="map-column">
-  <section class="panel map-panel">
-    <div class="section-head">
-      <div>
-        <p class="eyebrow">Map</p>
-        <h2>Lolo Map</h2>
-        <p class="muted">Click the areas for an overview popup.</p>
-      </div>
-    </div>
+          <div id="map"></div>
+        </section>
+      </section>
+    </main>
 
-    <div id="map"></div>
-  </section>
-</section>
-</main>
-
-<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="./state.js?v=45"></script>
-<script src="./dom.js?v=45"></script>
-<script src="./utils/utils.js?v=45"></script>
-<script src="./api.js?v=45"></script>
-<script src="./events.js?v=45"></script>
-<script src="./map.js?v=45"></script>
-<script src="./render.js?v=44"></script>
-<script src="./app.js?v=44"></script>
-</body>
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <script src="./state.js?v=46"></script>
+    <script src="./dom.js?v=46"></script>
+    <script src="./utils/utils.js?v=46"></script>
+    <script src="./api.js?v=46"></script>
+    <script src="./events.js?v=46"></script>
+    <script src="./map.js?v=46"></script>
+    <script src="./render.js?v=46"></script>
+    <script src="./app.js?v=46"></script>
+  </body>
 </html>
-

@@ -15,9 +15,5 @@ const el = {
   selectionLabel: document.querySelector("#selection-label"),
   recordList: document.querySelector("#record-list"),
   detailTitle: document.querySelector("#detail-title"),
-  detailSubtitle: document.querySelector("#detail-subtitle"),
-  detailBreadcrumbs: document.querySelector("#detail-breadcrumbs"),
-  subareaRouteStrip: document.querySelector("#subarea-route-strip"),
-  detailFacts: document.querySelector("#detail-facts"),
-  detailDescription: document.querySelector("#detail-description")
+  detailSubtitle: document.querySelector("#detail-subtitle")
 };
