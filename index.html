@@ -14,25 +14,16 @@
       href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=47" />
+    <link rel="stylesheet" href="./styles.css?v=48" />
   </head>
   <body>
     <main class="app-shell app-shell--map-first">
       <aside class="sidebar-column">
         <section class="panel controls-panel">
-          <div class="toolbar">
-            <div class="mode-tabs" id="mode-tabs">
-              <button class="mode-tab active" data-mode="routes">Routes</button>
-              <button class="mode-tab" data-mode="subareas">Subareas</button>
-              <button class="mode-tab" data-mode="areas">Areas</button>
-              <button class="mode-tab" data-mode="sectors">Sectors</button>
-            </div>
-            <div class="toolbar-actions">
-              <button id="reset-all" class="ghost">Reset</button>
-            </div>
+          <div class="panel-head">
+            <p class="eyebrow">Filters</p>
+            <h2>Routes</h2>
           </div>
-
-          <p id="status-banner" class="status-banner">Loading climbing data...</p>
 
           <div id="filters-panel-body" class="filters-panel-body">
             <div class="filter-grid">
@@ -83,20 +74,37 @@
               </div>
             </div>
           </div>
+
+          <button id="reset-all" class="ghost reset-button">Reset Filters</button>
         </section>
 
         <section class="panel results-panel">
-          <div class="section-head">
+          <div class="section-head results-head">
             <div>
               <p class="eyebrow">Results</p>
-              <h2 id="detail-title">Routes</h2>
+              <h2 id="results-title">Routes</h2>
             </div>
-            <p id="detail-subtitle" class="muted">All matching routes appear here.</p>
+            <p id="results-meta" class="muted">0 results</p>
           </div>
 
           <div id="record-list" class="record-list"></div>
         </section>
       </aside>
+
+      <section class="panel detail-panel">
+        <div class="section-head detail-head">
+          <div>
+            <p class="eyebrow">Detail</p>
+            <h2 id="detail-title">Choose a route</h2>
+          </div>
+          <p id="detail-subtitle" class="muted">Area and subarea details will appear here when filters are applied.</p>
+        </div>
+
+        <div id="detail-description" class="description-card empty-state">
+          Use the filters or click a route to inspect details without leaving the page.
+        </div>
+        <div id="detail-facts" class="facts-grid"></div>
+      </section>
 
       <section class="map-column">
         <section class="panel map-panel">
@@ -114,13 +122,13 @@
     </main>
 
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-    <script src="./state.js?v=47"></script>
-    <script src="./dom.js?v=47"></script>
-    <script src="./utils/utils.js?v=47"></script>
-    <script src="./api.js?v=47"></script>
-    <script src="./events.js?v=47"></script>
-    <script src="./map.js?v=47"></script>
-    <script src="./render.js?v=47"></script>
-    <script src="./app.js?v=47"></script>
+    <script src="./state.js?v=48"></script>
+    <script src="./dom.js?v=48"></script>
+    <script src="./utils/utils.js?v=48"></script>
+    <script src="./api.js?v=48"></script>
+    <script src="./events.js?v=48"></script>
+    <script src="./map.js?v=48"></script>
+    <script src="./render.js?v=48"></script>
+    <script src="./app.js?v=48"></script>
   </body>
 </html>

@@ -13,7 +13,11 @@ const el = {
   activeModeLabel: document.querySelector("#active-mode-label"),
   resultCount: document.querySelector("#result-count"),
   selectionLabel: document.querySelector("#selection-label"),
+  resultsTitle: document.querySelector("#results-title"),
+  resultsMeta: document.querySelector("#results-meta"),
   recordList: document.querySelector("#record-list"),
   detailTitle: document.querySelector("#detail-title"),
-  detailSubtitle: document.querySelector("#detail-subtitle")
+  detailSubtitle: document.querySelector("#detail-subtitle"),
+  detailDescription: document.querySelector("#detail-description"),
+  detailFacts: document.querySelector("#detail-facts")
 };

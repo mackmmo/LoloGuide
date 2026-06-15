@@ -12,36 +12,12 @@ async function resetAll() {
   state.contextMode = null;
   state.selected = null;
 
-  renderModeTabs();
   renderFilters();
   await loadRoutesFromBackend();
 }
 
 function bindEvents() {
   el.resetAll.addEventListener("click", resetAll);
-
-  el.modeTabs.forEach((button) => {
-    button.addEventListener("click", () => {
-      state.mode = button.dataset.mode;
-      state.contextRecord = null;
-      state.contextMode = null;
-
-      if (button.dataset.mode === "routes") {
-        state.filters.sectorId = "";
-        state.filters.areaId = "";
-        state.filters.subareaId = "";
-        state.filters.type = "";
-        state.filters.search = "";
-      }
-
-      if (button.dataset.mode === "subareas" || button.dataset.mode === "areas") {
-        state.filters.subareaId = "";
-      }
-
-      state.selected = null;
-      render();
-    });
-  });
 
   el.searchInput.addEventListener("input", async (event) => {
     state.filters.search = event.target.value;
@@ -50,6 +26,7 @@ function bindEvents() {
 
   el.sectorFilter.addEventListener("change", async (event) => {
     state.filters.sectorId = event.target.value;
+    state.selected = null;
 
     if (state.filters.sectorId && !areaMatchesSector(state.filters.areaId, state.filters.sectorId)) {
       state.filters.areaId = "";
@@ -62,6 +39,7 @@ function bindEvents() {
 
   el.areaFilter.addEventListener("change", async (event) => {
     state.filters.areaId = event.target.value;
+    state.selected = null;
 
     if (state.filters.areaId) {
       const area = areaById.get(state.filters.areaId);
@@ -78,6 +56,7 @@ function bindEvents() {
 
   el.subareaFilter.addEventListener("change", async (event) => {
     state.filters.subareaId = event.target.value;
+    state.selected = null;
 
     if (state.filters.subareaId) {
       const subarea = subareaById.get(state.filters.subareaId);
@@ -94,6 +73,7 @@ function bindEvents() {
 
   el.typeFilter.addEventListener("change", async (event) => {
     state.filters.type = event.target.value;
+    state.selected = null;
     await loadRoutesFromBackend();
   });
 
@@ -107,28 +87,28 @@ function jumpTo(mode, id) {
   state.mode = mode;
   state.contextRecord = null;
   state.contextMode = null;
-  state.selected = (state.datasets[mode] || []).find((item) => recordKey(item) === String(id)) || null;
+  state.selected = null;
 
-  if (mode === "areas" && state.selected) {
-    state.filters.sectorId = String(state.selected.sector || "");
-    state.filters.areaId = String(state.selected.area_id || "");
-    state.filters.subareaId = "";
+  if (mode === "areas") {
+    const area = areaById.get(String(id));
+    if (area) {
+      state.filters.sectorId = String(area.sector || "");
+      state.filters.areaId = String(area.area_id || "");
+      state.filters.subareaId = "";
+    }
   }
 
-  if (mode === "subareas" && state.selected) {
-    state.filters.areaId = String(state.selected.area || "");
-    state.filters.subareaId = String(state.selected.subarea_id || "");
-    const area = areaById.get(String(state.selected.area || ""));
-    state.filters.sectorId = area ? String(area.sector) : state.filters.sectorId;
+  if (mode === "subareas") {
+    const subarea = subareaById.get(String(id));
+    if (subarea) {
+      state.filters.subareaId = String(subarea.subarea_id || "");
+      state.filters.areaId = String(subarea.area || "");
+      const area = areaById.get(String(subarea.area || ""));
+      state.filters.sectorId = area ? String(area.sector) : state.filters.sectorId;
+    }
   }
 
-  if (mode === "routes" && state.selected) {
-    state.filters.subareaId = String(state.selected.subarea || "");
-    state.filters.areaId = String(state.selected.area || "");
-    state.filters.sectorId = String(state.selected.sector || "");
-  }
-
-  render();
+  loadRoutesFromBackend();
 }
 
 function areaMatchesSector(areaId, sectorId) {

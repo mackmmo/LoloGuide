@@ -4,9 +4,14 @@ function render() {
   renderFilters();
   renderStats();
   renderList();
+  renderDetail();
 }
 
 function renderStatus() {
+  if (!el.statusBanner) {
+    return;
+  }
+
   const failures = Object.entries(state.loadErrors);
 
   if (state.isLoading) {
@@ -15,7 +20,7 @@ function renderStatus() {
   }
 
   if (!failures.length) {
-    el.statusBanner.textContent = `Connected to ${state.apiBase}. Loaded ${state.datasets.routes.length} routes across ${state.datasets.subareas.length} subareas, ${state.datasets.areas.length} areas, and ${state.datasets.sectors.length} sectors.`;
+    el.statusBanner.textContent = `Connected to ${state.apiBase}.`;
     return;
   }
 
@@ -23,9 +28,7 @@ function renderStatus() {
 }
 
 function renderModeTabs() {
-  el.modeTabs.forEach((button) => {
-    button.classList.toggle("active", button.dataset.mode === state.mode);
-  });
+  return;
 }
 
 function renderFilters() {
@@ -72,16 +75,7 @@ function populatePrimitiveSelect(select, emptyLabel, values, selectedValue) {
 }
 
 function renderStats() {
-  if (!el.statsGrid) {
-    return;
-  }
-
-  el.statsGrid.innerHTML = [
-    statCard("Routes", state.datasets.routes.length),
-    statCard("Subareas", state.datasets.subareas.length),
-    statCard("Areas", state.datasets.areas.length),
-    statCard("Sectors", state.datasets.sectors.length)
-  ].join("");
+  return;
 }
 
 function statCard(label, value) {
@@ -89,34 +83,7 @@ function statCard(label, value) {
 }
 
 function getVisibleRecords() {
-  const source = state.datasets[state.mode] || [];
-
-  if (state.mode === "routes") {
-    return source;
-  }
-
-  const search = state.filters.search.toLowerCase();
-
-  const records = source.filter((record) => {
-    if (state.mode === "subareas") {
-      if (state.filters.sectorId && String(record.sector) !== state.filters.sectorId) {
-        return false;
-      }
-      if (state.filters.areaId && String(record.area) !== state.filters.areaId) {
-        return false;
-      }
-    }
-
-    if (state.mode === "areas") {
-      if (state.filters.sectorId && String(record.sector) !== state.filters.sectorId) {
-        return false;
-      }
-    }
-
-    return !search || searchableText(record).includes(search);
-  });
-
-  return sortRecords(records);
+  return state.datasets.routes || [];
 }
 
 function searchableText(record) {
@@ -136,22 +103,7 @@ function searchableText(record) {
 }
 
 function sortRecords(records) {
-  const sort = state.filters.sort;
-  if (sort === "default") {
-    return records;
-  }
-
-  return [...records].sort((left, right) => {
-    if (sort === "stars") {
-      return Number(right.star_rating || 0) - Number(left.star_rating || 0);
-    }
-    if (sort === "height") {
-      return Number(right.height || 0) - Number(left.height || 0);
-    }
-    const leftValue = String(left[sort] ?? "");
-    const rightValue = String(right[sort] ?? "");
-    return leftValue.localeCompare(rightValue, undefined, { numeric: true });
-  });
+  return records;
 }
 
 function syncSelectedRecord() {
@@ -170,24 +122,23 @@ function syncSelectedRecord() {
 function renderList() {
   const records = getVisibleRecords();
 
-  el.activeModeLabel.textContent = capitalize(state.mode);
-  el.resultCount.textContent = String(records.length);
-  el.selectionLabel.textContent = state.contextRecord ? recordTitle(state.contextRecord) : state.selected ? recordTitle(state.selected) : "None";
-  el.detailTitle.textContent = capitalize(state.mode);
-  el.detailSubtitle.textContent = `${records.length} result${records.length === 1 ? "" : "s"}`;
+  if (el.activeModeLabel) el.activeModeLabel.textContent = "Routes";
+  if (el.resultCount) el.resultCount.textContent = String(records.length);
+  if (el.selectionLabel) el.selectionLabel.textContent = state.selected ? recordTitle(state.selected) : detailSelectionLabel();
+  if (el.resultsTitle) el.resultsTitle.textContent = "Routes";
+  if (el.resultsMeta) el.resultsMeta.textContent = `${records.length} result${records.length === 1 ? "" : "s"}`;
 
   if (!records.length) {
-    el.recordList.innerHTML = `<div class="description-card empty-state">No ${state.mode} match the current filters.</div>`;
+    el.recordList.innerHTML = `<div class="description-card empty-state">No routes match the current filters.</div>`;
     return;
   }
 
   el.recordList.innerHTML = records.map(renderRecordCard).join("");
   document.querySelectorAll(".record-card").forEach((button, index) => {
     button.addEventListener("click", () => {
-      state.contextRecord = null;
-      state.contextMode = null;
       state.selected = records[index];
-      render();
+      renderDetail();
+      renderList();
     });
   });
 }
@@ -197,112 +148,116 @@ function renderRecordCard(record) {
   return `
     <button class="record-card ${active}" data-id="${recordKey(record)}">
       <strong>${escapeHtml(recordTitle(record))}</strong>
-      <small>${escapeHtml(recordMeta(record))}</small>
+      <small>${escapeHtml(recordMeta(record, "routes"))}</small>
       <p>${escapeHtml(recordSnippet(record))}</p>
     </button>
   `;
 }
 
+function currentDetailRecord() {
+  if (state.selected) {
+    return { record: state.selected, mode: "routes" };
+  }
+
+  if (state.filters.subareaId) {
+    const subarea = subareaById.get(String(state.filters.subareaId));
+    if (subarea) {
+      return { record: subarea, mode: "subareas" };
+    }
+  }
+
+  if (state.filters.areaId) {
+    const area = areaById.get(String(state.filters.areaId));
+    if (area) {
+      return { record: area, mode: "areas" };
+    }
+  }
+
+  if (state.filters.sectorId) {
+    const sector = sectorById.get(String(state.filters.sectorId));
+    if (sector) {
+      return { record: sector, mode: "sectors" };
+    }
+  }
+
+  return null;
+}
+
+function detailSelectionLabel() {
+  const current = currentDetailRecord();
+  return current ? recordTitle(current.record) : "None";
+}
+
 function renderDetail() {
-  return;
+  const current = currentDetailRecord();
+
+  if (!current) {
+    el.detailTitle.textContent = "Choose a route";
+    el.detailSubtitle.textContent = "Area and subarea details will appear here when filters are applied.";
+    el.detailDescription.innerHTML = "Use the filters or click a route to inspect details without leaving the page.";
+    el.detailFacts.innerHTML = "";
+    updateMap(null);
+    return;
+  }
+
+  const { record, mode } = current;
+  el.detailTitle.textContent = recordTitle(record);
+  el.detailSubtitle.textContent = recordMeta(record, mode);
+  el.detailDescription.innerHTML = buildDetailDescription(record, mode);
+  el.detailFacts.innerHTML = detailFacts(record, mode).map(renderFact).join("");
+  updateMap(mode === "routes" ? record : null);
 }
 
-function renderContextStrip(record, detailMode = state.mode) {
-  if (detailMode === "areas") {
-    renderAreaSubareaStrip(record);
-    return;
+function buildDetailDescription(record, mode) {
+  const extra = [];
+  if (mode === "areas" && record.directions) {
+    extra.push(`<p><strong>Directions</strong> ${escapeHtml(record.directions)}</p>`);
+  }
+  if (mode === "routes" && record.pro) {
+    extra.push(`<p><strong>Protection</strong> ${escapeHtml(record.pro)}</p>`);
   }
 
-  renderSubareaRouteStrip(record, detailMode);
+  const description = record.description || "No description available.";
+  return `<strong>Description</strong><p>${escapeHtml(description)}</p>${extra.join("")}`;
 }
 
-function renderAreaSubareaStrip(record) {
-  const subareas = state.datasets.subareas
-    .filter((subarea) => String(subarea.area) === String(record.area_id))
-    .sort((left, right) => String(left.name || "").localeCompare(String(right.name || "")));
+function detailFacts(record, detailMode = "routes") {
+  const facts = [];
 
-  if (!subareas.length) {
-    el.subareaRouteStrip.innerHTML = "";
-    return;
+  if (detailMode === "routes") {
+    facts.push(["Grade", record.grade || "-"]);
+    facts.push(["Type", routeTypeLabel(record.type) || record.type || "-"]);
+    facts.push(["Stars", record.star_rating ?? "-"]);
+    facts.push(["Height", record.height ? `${record.height} ft` : "-"]);
+    facts.push(["Danger", record.danger_rating || "-"]);
+    facts.push(["First ascent", record.first_ascencionist || "-"]);
+    facts.push(["FA year", record.fa_year ?? "-"]);
+  } else if (detailMode === "subareas") {
+    facts.push(["Area", record.area_name || "-"]);
+    facts.push(["Sector", record.sector_name || "-"]);
+    facts.push(["Aspect", record.aspect || "-"]);
+    facts.push(["Routes", countRoutesForSubarea(record.subarea_id)]);
+  } else if (detailMode === "areas") {
+    facts.push(["Sector", record.sector_name || "-"]);
+    facts.push(["Approach", record.approach_time ? `${record.approach_time} min` : "-"]);
+    facts.push(["Drive", record.drive_time ? `${record.drive_time} min` : "-"]);
+    facts.push(["Aspect", record.aspect || "-"]);
+    facts.push(["Subareas", countSubareasForArea(record.area_id)]);
+    facts.push(["Routes", countRoutesForArea(record.area_id)]);
+  } else {
+    facts.push(["Areas", countAreasForSector(record.sector_id)]);
+    facts.push(["Subareas", countSubareasForSector(record.sector_id)]);
+    facts.push(["Routes", countRoutesForSector(record.sector_id)]);
   }
 
-  el.subareaRouteStrip.innerHTML =
-    `
-      <div class="description-card">
-        Subareas in this area. Choose one to move into its route overview.
-      </div>
-    ` +
-    subareas
-      .map((subarea) => {
-        const routeCount = countRoutesForSubarea(subarea.subarea_id);
-        return `
-          <button class="subarea-route-card" data-subarea-id="${subarea.subarea_id}">
-            <small>${escapeHtml(subarea.aspect || "Subarea")}</small>
-            <strong>${escapeHtml(subarea.name)}</strong>
-            <small>${escapeHtml(`${routeCount} route${routeCount === 1 ? "" : "s"}`)}</small>
-          </button>
-        `;
-      })
-      .join("");
-
-  document.querySelectorAll(".subarea-route-card[data-subarea-id]").forEach((button) => {
-    button.addEventListener("click", () => {
-      jumpTo("subareas", button.dataset.subareaId);
-    });
-  });
-}
-
-function renderSubareaRouteStrip(record, detailMode = state.mode) {
-  const subareaId =
-    detailMode === "routes" ? record.subarea :
-    detailMode === "subareas" ? record.subarea_id :
-    null;
-
-  if (!subareaId) {
-    el.subareaRouteStrip.innerHTML = "";
-    return;
-  }
-
-  const routes = routesForSubarea(subareaId);
-  if (!routes.length) {
-    el.subareaRouteStrip.innerHTML = "";
-    return;
-  }
-
-  el.subareaRouteStrip.innerHTML =
-    `
-      <div class="description-card">
-        Routes in this subarea are ordered left to right.
-      </div>
-    ` +
-    routes
-      .map((route) => {
-        const active =
-          state.mode === "routes" && state.selected && String(state.selected.route_id) === String(route.route_id)
-            ? "active"
-            : "";
-        return `
-          <button class="subarea-route-card ${active}" data-route-id="${route.route_id}">
-            <small>${escapeHtml(routeTypeLabel(route.type) || "Route")}</small>
-            <strong>${escapeHtml(route.name)}</strong>
-            <small>${escapeHtml([route.grade, route.height ? `${route.height} ft` : ""].filter(Boolean).join(" | "))}</small>
-          </button>
-        `;
-      })
-      .join("");
-
-  document.querySelectorAll(".subarea-route-card[data-route-id]").forEach((button) => {
-    button.addEventListener("click", () => {
-      jumpTo("routes", button.dataset.routeId);
-    });
-  });
+  return facts;
 }
 
 function recordTitle(record) {
   return record.name || `Record ${recordKey(record)}`;
 }
 
-function recordMeta(record, detailMode = state.mode) {
+function recordMeta(record, detailMode = "routes") {
   if (detailMode === "routes") {
     return [record.grade, routeTypeLabel(record.type), record.subarea_name, record.area_name].filter(Boolean).join(" | ");
   }
