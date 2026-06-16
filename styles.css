@@ -82,7 +82,9 @@ body::before {
 .results-panel,
 .detail-panel,
 .map-panel {
-  grid-template-rows: auto minmax(0, 1fr);
+  display: grid;
+  gap: 12px;
+  overflow: hidden;
 }
 
 .panel {
@@ -105,7 +107,11 @@ body::before {
 .filters-panel-body,
 .record-list,
 .detail-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 12px;
   min-height: 0;
+  overflow: hidden;
 }
 
 .filters-panel-body,
@@ -242,7 +248,8 @@ label {
 }
 
 .description-card {
-  line-height: 1.65;
+  margin-top: 0;
+  line-height: 1.55;
 }
 
 .description-card strong {
@@ -256,6 +263,7 @@ label {
 .description-card p {
   margin: 0 0 10px;
   color: var(--muted);
+  font-weight: 400;
 }
 
 .fact-card strong {
@@ -314,8 +322,11 @@ label {
   .filters-panel-body,
   .record-list,
   .detail-panel {
-    max-height: 320px;
-  }
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 @media (max-width: 760px) {
@@ -333,8 +344,11 @@ label {
   .filters-panel-body,
   .record-list,
   .detail-panel {
-    max-height: 260px;
-  }
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .map-popup-card {
@@ -377,4 +391,17 @@ label {
   color: var(--ink);
   font-size: 0.92rem;
   font-weight: 600;
+}
+
+#detail-description {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
+  margin-top: 0;
+}
+
+#detail-facts {
+  margin-top: 0;
+  flex-shrink: 0;
 }
