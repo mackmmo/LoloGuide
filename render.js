@@ -122,9 +122,6 @@ function syncSelectedRecord() {
 function renderList() {
   const records = getVisibleRecords();
 
-  if (el.activeModeLabel) el.activeModeLabel.textContent = "Routes";
-  if (el.resultCount) el.resultCount.textContent = String(records.length);
-  if (el.selectionLabel) el.selectionLabel.textContent = state.selected ? recordTitle(state.selected) : detailSelectionLabel();
   if (el.resultsTitle) el.resultsTitle.textContent = "Routes";
   if (el.resultsMeta) el.resultsMeta.textContent = `${records.length} result${records.length === 1 ? "" : "s"}`;
 
