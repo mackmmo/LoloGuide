@@ -39,6 +39,8 @@ function buildRoutesQuery() {
   if (state.filters.type) params.set("type", state.filters.type);
 
   const orderingMap = {
+    leftToRight: "crag_order",
+    rightToLeft: "-crag_order",
     name: "name",
     grade: "grade_index",
     stars: "star_rating",
