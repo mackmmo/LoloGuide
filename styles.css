@@ -435,6 +435,10 @@ label {
     border-radius: 18px;
   }
 
+  .results-panel {
+    max-height: 46vh;
+  }
+
   .panel-head,
   .section-head,
   .results-head,
@@ -446,6 +450,12 @@ label {
 
   #detail-facts {
     grid-template-columns: 1fr;
+  }
+
+  .record-list {
+    min-height: 0;
+    max-height: 100%;
+    overflow-y: auto;
   }
 
   #map {
