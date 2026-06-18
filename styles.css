@@ -91,16 +91,16 @@ body::before {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 8px 0 2px;
+  padding: 4px 0 0;
 }
 
 .site-logo {
   display: block;
   width: 100%;
-  max-width: 290px;
+  max-width: 190px;
   height: auto;
-  border-radius: 24px;
-  box-shadow: 0 18px 40px rgba(17, 24, 20, 0.18);
+  border-radius: 20px;
+  box-shadow: 0 12px 26px rgba(17, 24, 20, 0.14);
   object-fit: cover;
 }
 
