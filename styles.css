@@ -349,6 +349,15 @@ label {
   font-weight: 600;
 }
 
+.map-popup-action {
+  margin-top: 12px;
+  width: 100%;
+  border: 1px solid rgba(15, 141, 97, 0.22);
+  background: linear-gradient(135deg, rgba(15, 141, 97, 0.12), rgba(255, 255, 255, 0.96));
+  color: var(--ink);
+  font-weight: 600;
+}
+
 @media (max-width: 1700px) {
   .app-shell.app-shell--map-first {
     grid-template-columns: 430px 430px minmax(0, 1fr);

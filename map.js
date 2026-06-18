@@ -329,7 +329,7 @@ if (!map.__areasPopupBound && map.getLayer("areas-fill")) {
       ...props
     };
 
-    new maplibregl.Popup({
+    const popup = new maplibregl.Popup({
       closeButton: true,
       closeOnClick: true,
       maxWidth: "320px"
@@ -337,6 +337,8 @@ if (!map.__areasPopupBound && map.getLayer("areas-fill")) {
       .setLngLat(event.lngLat)
       .setHTML(buildAreaPopupHtml(popupArea))
       .addTo(map);
+
+    bindAreaPopupActions(popup, areaId);
   });
 
   map.__areasPopupBound = true;
@@ -357,6 +359,45 @@ function buildAreaTypeSummary(areaId) {
   ]
     .filter(Boolean)
     .join(" | ");
+}
+
+function buildAreaPopupHtml(area) {
+  const typeSummary = buildAreaTypeSummary(area.area_id);
+
+  return `
+    <div class="map-popup-card">
+      <h3>${escapeHtml(area.name || "Area")}</h3>
+      <p class="map-popup-description">
+        ${escapeHtml(area.description || "No description available.")}
+      </p>
+      <div class="map-popup-facts">
+        <span><strong>Drive</strong> ${escapeHtml(area.drive_time ? `${area.drive_time} min` : "-")}</span>
+        <span><strong>Approach</strong> ${escapeHtml(area.approach_time ? `${area.approach_time} min` : "-")}</span>
+        <span><strong>Aspect</strong> ${escapeHtml(area.aspect || "-")}</span>
+      </div>
+      ${typeSummary ? `<p class="map-popup-summary">${escapeHtml(typeSummary)}</p>` : ""}
+      <button class="map-popup-action" type="button" data-area-id="${escapeHtml(String(area.area_id || ""))}">
+        View Area
+      </button>
+    </div>
+  `;
+}
+
+function bindAreaPopupActions(popup, areaId) {
+  const popupElement = popup.getElement();
+  if (!popupElement) {
+    return;
+  }
+
+  const button = popupElement.querySelector("[data-area-id]");
+  if (!button) {
+    return;
+  }
+
+  button.addEventListener("click", async () => {
+    popup.remove();
+    await focusAreaFromMap(areaId);
+  });
 }
 
 function getRouteTypeCountsForArea(areaId) {
@@ -381,7 +422,16 @@ function getRouteTypeCountsForArea(areaId) {
   return counts;
 }
 
-function focusAreaFromMap(area) {
+async function focusAreaFromMap(areaOrId) {
+  const area =
+    typeof areaOrId === "object" && areaOrId
+      ? areaOrId
+      : areaById.get(String(areaOrId));
+
+  if (!area) {
+    return;
+  }
+
   state.filters.sectorId = String(area.sector);
   state.filters.areaId = String(area.area_id);
   state.filters.subareaId = "";
@@ -392,7 +442,8 @@ function focusAreaFromMap(area) {
   state.contextMode = "areas";
   state.selected = null;
 
-  render();
+  renderFilters();
+  await loadRoutesFromBackend();
 }
 
 function fitMapToOverview() {}
