@@ -95,14 +95,14 @@ body::before {
   margin-bottom: 2px;
 }
 
-.site-logo {
-  display: block;
-  width: 100%;
-  max-width: 136px;
-  height: auto;
-  border-radius: 16px;
-  box-shadow: 0 10px 22px rgba(17, 24, 20, 0.12);
-  object-fit: cover;
+.app-title {
+  margin: 0;
+  max-width: 280px;
+  text-align: center;
+  font-size: 1.05rem;
+  line-height: 1.25;
+  font-weight: 700;
+  color: var(--ink);
 }
 
 .results-panel {
@@ -431,9 +431,9 @@ label {
     border-radius: 22px;
   }
 
-  .site-logo {
-    max-width: 220px;
-    border-radius: 18px;
+  .app-title {
+    max-width: none;
+    font-size: 1rem;
   }
 
   .results-panel {
