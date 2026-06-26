@@ -14,6 +14,7 @@ async function resetAll() {
 
   renderFilters();
   await loadRoutesFromBackend();
+  trackEvent("reset_filters");
 }
 
 function bindEvents() {
@@ -22,6 +23,10 @@ function bindEvents() {
   el.searchInput.addEventListener("input", async (event) => {
     state.filters.search = event.target.value;
     await loadRoutesFromBackend();
+    trackEvent("filter_change", {
+      filter_type: "search",
+      value: state.filters.search || "blank"
+    });
   });
 
   el.sectorFilter.addEventListener("change", async (event) => {
@@ -35,6 +40,10 @@ function bindEvents() {
 
     renderFilters();
     await loadRoutesFromBackend();
+    trackEvent("filter_change", {
+      filter_type: "sector",
+      value: state.filters.sectorId || "all"
+    });
   });
 
   el.areaFilter.addEventListener("change", async (event) => {
@@ -52,6 +61,10 @@ function bindEvents() {
 
     renderFilters();
     await loadRoutesFromBackend();
+    trackEvent("filter_change", {
+      filter_type: "area",
+      value: state.filters.areaId || "all"
+    });
   });
 
   el.subareaFilter.addEventListener("change", async (event) => {
@@ -69,17 +82,28 @@ function bindEvents() {
 
     renderFilters();
     await loadRoutesFromBackend();
+    trackEvent("filter_change", {
+      filter_type: "subarea",
+      value: state.filters.subareaId || "all"
+    });
   });
 
   el.typeFilter.addEventListener("change", async (event) => {
     state.filters.type = event.target.value;
     state.selected = null;
     await loadRoutesFromBackend();
+    trackEvent("filter_change", {
+      filter_type: "type",
+      value: state.filters.type || "all"
+    });
   });
 
   el.sortFilter.addEventListener("change", async (event) => {
     state.filters.sort = event.target.value;
     await loadRoutesFromBackend();
+    trackEvent("sort_change", {
+      sort: state.filters.sort || "default"
+    });
   });
 }
 

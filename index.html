@@ -14,7 +14,14 @@
       href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=56" />
+    <link rel="stylesheet" href="./styles.css?v=59" />
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-BYGF2CWJ49"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag("js", new Date());
+      gtag("config", "G-BYGF2CWJ49");
+    </script>
   </head>
   <body>
     <main class="app-shell app-shell--map-first">
@@ -87,9 +94,11 @@
           <p id="detail-subtitle" class="muted">Area and subarea details will appear here when filters are applied.</p>
         </div>
 
+        <div id="detail-nav" class="detail-nav"></div>
         <div id="detail-description" class="description-card empty-state">
           Use the filters or click a route to inspect details without leaving the page.
         </div>
+        <div id="detail-related" class="detail-related"></div>
         <div id="detail-facts" class="facts-grid"></div>
       </section>
 
@@ -109,13 +118,13 @@
     </main>
 
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-    <script src="./state.js?v=56"></script>
-    <script src="./dom.js?v=56"></script>
-    <script src="./utils/utils.js?v=56"></script>
-    <script src="./api.js?v=56"></script>
-    <script src="./events.js?v=56"></script>
-    <script src="./map.js?v=56"></script>
-    <script src="./render.js?v=56"></script>
-    <script src="./app.js?v=56"></script>
+    <script src="./state.js?v=59"></script>
+    <script src="./dom.js?v=59"></script>
+    <script src="./utils/utils.js?v=59"></script>
+    <script src="./api.js?v=59"></script>
+    <script src="./events.js?v=59"></script>
+    <script src="./map.js?v=59"></script>
+    <script src="./render.js?v=59"></script>
+    <script src="./app.js?v=59"></script>
   </body>
 </html>

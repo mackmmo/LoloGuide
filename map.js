@@ -67,6 +67,21 @@ function renderOverlayLayers() {
       console.log("Areas fill layer added");
     }
 
+    if (!map.getLayer("areas-hit")) {
+      map.addLayer({
+        id: "areas-hit",
+        type: "line",
+        source: "areas",
+        "source-layer": "areas",
+        paint: {
+          "line-color": "#000000",
+          "line-width": 18,
+          "line-opacity": 0
+        }
+      });
+      console.log("Areas hit layer added");
+    }
+
     if (!map.getLayer("areas-outline")) {
       map.addLayer({
         id: "areas-outline",
@@ -313,8 +328,8 @@ if (!map.getLayer("trailheads-labels")) {
   console.log("Trailheads labels layer added");
 }
 
-if (!map.__areasPopupBound && map.getLayer("areas-fill")) {
-  map.on("click", "areas-fill", (event) => {
+if (!map.__areasPopupBound && map.getLayer("areas-hit")) {
+  map.on("click", "areas-hit", (event) => {
     const feature = event.features && event.features[0];
     if (!feature) {
       return;
@@ -329,6 +344,12 @@ if (!map.__areasPopupBound && map.getLayer("areas-fill")) {
       ...props
     };
 
+    trackEvent("popup_open", {
+      popup_type: "area",
+      area_id: areaId,
+      area_name: popupArea.name || ""
+    });
+
     const popup = new maplibregl.Popup({
       closeButton: true,
       closeOnClick: true,
@@ -342,6 +363,34 @@ if (!map.__areasPopupBound && map.getLayer("areas-fill")) {
   });
 
   map.__areasPopupBound = true;
+}
+
+if (!map.__areaLabelsClickBound && map.getLayer("area-labels")) {
+  map.on("click", "area-labels", async (event) => {
+    const feature = event.features && event.features[0];
+    if (!feature) {
+      return;
+    }
+
+    const areaId = String((feature.properties || {}).area_id || "");
+    if (!areaId) {
+      return;
+    }
+
+    const area = state.datasets.areas.find((item) => String(item.area_id) === areaId);
+    if (!area) {
+      return;
+    }
+
+    trackEvent("view_area_from_label", {
+      area_id: areaId,
+      area_name: area.name || ""
+    });
+
+    await focusAreaFromMap(areaId);
+  });
+
+  map.__areaLabelsClickBound = true;
 }
   } catch (error) {
     console.error("renderOverlayLayers error", error);
@@ -395,6 +444,9 @@ function bindAreaPopupActions(popup, areaId) {
   }
 
   button.addEventListener("click", async () => {
+    trackEvent("view_area_from_map", {
+      area_id: areaId
+    });
     popup.remove();
     await focusAreaFromMap(areaId);
   });

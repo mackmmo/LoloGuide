@@ -134,6 +134,12 @@ function renderList() {
   document.querySelectorAll(".record-card").forEach((button, index) => {
     button.addEventListener("click", () => {
       state.selected = records[index];
+      trackEvent("route_select", {
+        route_id: String(records[index].route_id || ""),
+        route_name: records[index].name || "",
+        area_name: records[index].area_name || "",
+        subarea_name: records[index].subarea_name || ""
+      });
       renderDetail();
       renderList();
     });

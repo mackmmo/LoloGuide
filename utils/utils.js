@@ -19,3 +19,11 @@ function escapeHtml(value) {
 function normalizeBaseUrl(value) {
   return String(value || DEFAULT_API_BASE).trim().replace(/\/+$/, "") || DEFAULT_API_BASE;
 }
+
+function trackEvent(eventName, params = {}) {
+  if (typeof window === "undefined" || typeof window.gtag !== "function") {
+    return;
+  }
+
+  window.gtag("event", eventName, params);
+}
