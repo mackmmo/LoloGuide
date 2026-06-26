@@ -211,9 +211,10 @@ function renderDetail() {
   if (el.detailTitle) {
     el.detailTitle.textContent = recordTitle(record);
   }
-  el.detailSubtitle.textContent = recordMeta(record, mode);
+  el.detailSubtitle.textContent = detailSummary(record, mode);
   if (el.detailNav) {
-    el.detailNav.innerHTML = "";
+    el.detailNav.innerHTML = buildDetailNav(record, mode);
+    bindDetailNav();
   }
   el.detailDescription.innerHTML = buildDetailDescription(record, mode);
   if (el.detailRelated) {
@@ -266,7 +267,47 @@ function buildDetailRelated(record, mode) {
 }
 
 function buildDetailNav(record, mode) {
-  return "";
+  const items = [];
+
+  if (mode === "routes") {
+    const subarea = record.subarea ? subareaById.get(String(record.subarea)) : null;
+    const area = record.area ? areaById.get(String(record.area)) : subarea ? areaById.get(String(subarea.area)) : null;
+
+    if (area) {
+      items.push(`<button class="detail-nav-chip" type="button" data-nav-mode="areas" data-nav-id="${area.area_id}">${escapeHtml(area.name)}</button>`);
+    }
+    if (subarea) {
+      items.push(`<button class="detail-nav-chip" type="button" data-nav-mode="subareas" data-nav-id="${subarea.subarea_id}">${escapeHtml(subarea.name)}</button>`);
+    }
+  } else if (mode === "subareas") {
+    const area = record.area ? areaById.get(String(record.area)) : null;
+    if (area) {
+      items.push(`<button class="detail-nav-chip" type="button" data-nav-mode="areas" data-nav-id="${area.area_id}">${escapeHtml(area.name)}</button>`);
+    }
+  }
+
+  if (!items.length) {
+    return "";
+  }
+
+  return `<div class="detail-nav-row">${items.join("")}</div>`;
+}
+
+function detailSummary(record, mode) {
+  if (mode === "routes") {
+    return [record.grade, routeTypeLabel(record.type), aspectSunLabel(record.aspect)].filter(Boolean).join(" | ");
+  }
+  if (mode === "subareas") {
+    return [record.area_name, aspectSunLabel(record.aspect)].filter(Boolean).join(" | ");
+  }
+  if (mode === "areas") {
+    return [
+      record.sector_name,
+      record.drive_time ? `${record.drive_time} min drive` : "",
+      record.approach_time ? `${record.approach_time} min approach` : ""
+    ].filter(Boolean).join(" | ");
+  }
+  return recordMeta(record, mode);
 }
 
 function bindDetailNav() {
