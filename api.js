@@ -164,7 +164,8 @@ function enrichRoute(route) {
     area: route.area ?? subarea?.area ?? null,
     area_name: route.area_name || area?.name || "Unknown area",
     sector: area?.sector ?? null,
-    sector_name: area?.sector_name || "Unknown sector"
+    sector_name: area?.sector_name || "Unknown sector",
+    aspect: route.aspect || subarea?.aspect || area?.aspect || ""
   };
 }
 

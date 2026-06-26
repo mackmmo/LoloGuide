@@ -15,6 +15,8 @@ const el = {
   recordList: document.querySelector("#record-list"),
   detailTitle: document.querySelector("#detail-title"),
   detailSubtitle: document.querySelector("#detail-subtitle"),
+  detailNav: document.querySelector("#detail-nav"),
   detailDescription: document.querySelector("#detail-description"),
+  detailRelated: document.querySelector("#detail-related"),
   detailFacts: document.querySelector("#detail-facts")
 };

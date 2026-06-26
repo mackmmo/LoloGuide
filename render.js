@@ -197,7 +197,9 @@ function renderDetail() {
   if (!current) {
     el.detailTitle.textContent = "Choose a route";
     el.detailSubtitle.textContent = "Area and subarea details will appear here when filters are applied.";
+    if (el.detailNav) el.detailNav.innerHTML = "";
     el.detailDescription.innerHTML = "Use the filters or click a route to inspect details without leaving the page.";
+    if (el.detailRelated) el.detailRelated.innerHTML = "";
     el.detailFacts.innerHTML = "";
     updateMap(null);
     return;
@@ -206,7 +208,15 @@ function renderDetail() {
   const { record, mode } = current;
   el.detailTitle.textContent = recordTitle(record);
   el.detailSubtitle.textContent = recordMeta(record, mode);
+  if (el.detailNav) {
+    el.detailNav.innerHTML = buildDetailNav(record, mode);
+    bindDetailNav();
+  }
   el.detailDescription.innerHTML = buildDetailDescription(record, mode);
+  if (el.detailRelated) {
+    el.detailRelated.innerHTML = buildDetailRelated(record, mode);
+    bindDetailNav();
+  }
   el.detailFacts.innerHTML = detailFacts(record, mode).map(renderFact).join("");
   updateMap(mode === "routes" ? record : null);
 }
@@ -224,6 +234,73 @@ function buildDetailDescription(record, mode) {
   return `<strong>Description</strong><p>${escapeHtml(description)}</p>${extra.join("")}`;
 }
 
+function buildDetailRelated(record, mode) {
+  if (mode !== "areas") {
+    return "";
+  }
+
+  const subareas = state.datasets.subareas
+    .filter((subarea) => String(subarea.area) === String(record.area_id))
+    .sort((left, right) => String(left.name || "").localeCompare(String(right.name || "")));
+
+  if (!subareas.length) {
+    return "";
+  }
+
+  return `
+    <div class="description-card">
+      <strong>Subareas</strong>
+      <div class="related-list">
+        ${subareas.map((subarea) => `
+          <button class="related-chip" type="button" data-nav-mode="subareas" data-nav-id="${subarea.subarea_id}">
+            <span class="related-chip-name">${escapeHtml(subarea.name)}</span>
+            <span class="related-chip-meta">${escapeHtml(aspectSunLabel(subarea.aspect))}</span>
+          </button>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function buildDetailNav(record, mode) {
+  const items = [];
+
+  if (mode === "routes") {
+    const subarea = record.subarea ? subareaById.get(String(record.subarea)) : null;
+    const area = record.area ? areaById.get(String(record.area)) : subarea ? areaById.get(String(subarea.area)) : null;
+
+    if (area) {
+      items.push(`<button class="detail-nav-chip" type="button" data-nav-mode="areas" data-nav-id="${area.area_id}">${escapeHtml(area.name)}</button>`);
+    }
+    if (subarea) {
+      items.push(`<button class="detail-nav-chip" type="button" data-nav-mode="subareas" data-nav-id="${subarea.subarea_id}">${escapeHtml(subarea.name)}</button>`);
+    }
+    items.push(`<span class="detail-nav-current">${escapeHtml(record.name || "Route")}</span>`);
+  } else if (mode === "subareas") {
+    const area = record.area ? areaById.get(String(record.area)) : null;
+    if (area) {
+      items.push(`<button class="detail-nav-chip" type="button" data-nav-mode="areas" data-nav-id="${area.area_id}">${escapeHtml(area.name)}</button>`);
+    }
+    items.push(`<span class="detail-nav-current">${escapeHtml(record.name || "Subarea")}</span>`);
+  } else if (mode === "areas") {
+    items.push(`<span class="detail-nav-current">${escapeHtml(record.name || "Area")}</span>`);
+  }
+
+  if (!items.length) {
+    return "";
+  }
+
+  return `<div class="detail-nav-row">${items.join('<span class="detail-nav-sep">/</span>')}</div>`;
+}
+
+function bindDetailNav() {
+  document.querySelectorAll("[data-nav-mode][data-nav-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      jumpTo(button.dataset.navMode, button.dataset.navId);
+    });
+  });
+}
+
 function detailFacts(record, detailMode = "routes") {
   const facts = [];
 
@@ -233,18 +310,19 @@ function detailFacts(record, detailMode = "routes") {
     facts.push(["Stars", record.star_rating ?? "-"]);
     facts.push(["Height", record.height ? `${record.height} ft` : "-"]);
     facts.push(["Danger", record.danger_rating || "-"]);
+    facts.push(["Sun", aspectSunLabel(record.aspect)]);
     facts.push(["First ascent", record.first_ascencionist || "-"]);
     facts.push(["FA year", record.fa_year ?? "-"]);
   } else if (detailMode === "subareas") {
     facts.push(["Area", record.area_name || "-"]);
     facts.push(["Sector", record.sector_name || "-"]);
-    facts.push(["Aspect", record.aspect || "-"]);
+    facts.push(["Sun", aspectSunLabel(record.aspect)]);
     facts.push(["Routes", countRoutesForSubarea(record.subarea_id)]);
   } else if (detailMode === "areas") {
     facts.push(["Sector", record.sector_name || "-"]);
     facts.push(["Approach", record.approach_time ? `${record.approach_time} min` : "-"]);
     facts.push(["Drive", record.drive_time ? `${record.drive_time} min` : "-"]);
-    facts.push(["Aspect", record.aspect || "-"]);
+    facts.push(["Sun", aspectSunLabel(record.aspect)]);
     facts.push(["Subareas", countSubareasForArea(record.area_id)]);
     facts.push(["Routes", countRoutesForArea(record.area_id)]);
   } else {
@@ -265,10 +343,10 @@ function recordMeta(record, detailMode = "routes") {
     return [record.grade, routeTypeLabel(record.type), record.subarea_name, record.area_name].filter(Boolean).join(" | ");
   }
   if (detailMode === "subareas") {
-    return [record.area_name, record.sector_name, record.aspect].filter(Boolean).join(" | ");
+    return [record.area_name, record.sector_name, aspectSunLabel(record.aspect)].filter(Boolean).join(" | ");
   }
   if (detailMode === "areas") {
-    return [record.sector_name, record.aspect, record.approach_time ? `${record.approach_time} min approach` : ""].filter(Boolean).join(" | ");
+    return [record.sector_name, aspectSunLabel(record.aspect), record.approach_time ? `${record.approach_time} min approach` : ""].filter(Boolean).join(" | ");
   }
   return `${countRoutesForSector(record.sector_id)} routes`;
 }

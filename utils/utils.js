@@ -27,3 +27,20 @@ function trackEvent(eventName, params = {}) {
 
   window.gtag("event", eventName, params);
 }
+
+function aspectSunLabel(aspect) {
+  const value = String(aspect || "").trim().toLowerCase();
+
+  const labels = {
+    north: "Shade most of the day",
+    northeast: "Morning sun, afternoon shade",
+    east: "Morning sun",
+    southeast: "Morning sun into early afternoon sun",
+    south: "All day sun",
+    southwest: "Afternoon sun into evening sun",
+    west: "Afternoon and evening sun",
+    northwest: "Late afternoon and evening sun"
+  };
+
+  return labels[value] || (aspect ? capitalize(String(aspect)) : "-");
+}

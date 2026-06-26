@@ -259,12 +259,45 @@ label {
   line-height: 1.5;
 }
 
+.detail-nav {
+  min-height: 0;
+}
+
+.detail-nav-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-nav-chip,
+.related-chip {
+  width: auto;
+  text-align: left;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.detail-nav-current {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.detail-nav-sep {
+  color: var(--muted);
+}
+
 #detail-description {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 18px 18px 12px;
   padding-right: 10px;
+}
+
+.detail-related {
+  min-height: 0;
 }
 
 .description-card,
@@ -287,6 +320,28 @@ label {
 
 .description-card p:last-child {
   margin-bottom: 0;
+}
+
+.related-list {
+  display: grid;
+  gap: 10px;
+}
+
+.related-chip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.related-chip-name {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.related-chip-meta {
+  color: var(--muted);
+  font-size: 0.92rem;
 }
 
 #detail-facts {
