@@ -113,8 +113,8 @@ body::before {
 
 .detail-panel {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 14px;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 12px;
 }
 
 .map-panel {
@@ -145,6 +145,32 @@ body::before {
 .results-head > div,
 .detail-head > div {
   min-width: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.detail-head {
+  display: block;
+}
+
+.detail-head-copy {
+  min-width: 0;
+}
+
+.detail-summary {
+  margin: 0;
+  font-size: clamp(1.05rem, 0.92rem + 0.7vw, 1.45rem);
+  line-height: 1.3;
 }
 
 .eyebrow {
@@ -260,7 +286,7 @@ label {
 }
 
 .detail-nav {
-  min-height: 0;
+  display: none;
 }
 
 .detail-nav-row {
@@ -294,10 +320,15 @@ label {
   overflow-x: hidden;
   padding: 18px 18px 12px;
   padding-right: 10px;
+  max-height: 28vh;
 }
 
 .detail-related {
   min-height: 0;
+  max-height: 26vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
 }
 
 .description-card,
@@ -325,6 +356,7 @@ label {
 .related-list {
   display: grid;
   gap: 10px;
+  align-content: start;
 }
 
 .related-chip {
@@ -464,7 +496,8 @@ label {
 
   .filters-panel-body,
   .record-list,
-  #detail-description {
+  #detail-description,
+  .detail-related {
     max-height: none;
   }
 
@@ -512,6 +545,12 @@ label {
     min-height: 0;
     max-height: 100%;
     overflow-y: auto;
+  }
+
+  #detail-description,
+  .detail-related {
+    overflow: visible;
+    padding-right: 0;
   }
 
   #map {

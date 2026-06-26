@@ -195,7 +195,9 @@ function renderDetail() {
   const current = currentDetailRecord();
 
   if (!current) {
-    el.detailTitle.textContent = "Choose a route";
+    if (el.detailTitle) {
+      el.detailTitle.textContent = "Choose a route";
+    }
     el.detailSubtitle.textContent = "Area and subarea details will appear here when filters are applied.";
     if (el.detailNav) el.detailNav.innerHTML = "";
     el.detailDescription.innerHTML = "Use the filters or click a route to inspect details without leaving the page.";
@@ -206,11 +208,12 @@ function renderDetail() {
   }
 
   const { record, mode } = current;
-  el.detailTitle.textContent = recordTitle(record);
+  if (el.detailTitle) {
+    el.detailTitle.textContent = recordTitle(record);
+  }
   el.detailSubtitle.textContent = recordMeta(record, mode);
   if (el.detailNav) {
-    el.detailNav.innerHTML = buildDetailNav(record, mode);
-    bindDetailNav();
+    el.detailNav.innerHTML = "";
   }
   el.detailDescription.innerHTML = buildDetailDescription(record, mode);
   if (el.detailRelated) {
@@ -263,34 +266,7 @@ function buildDetailRelated(record, mode) {
 }
 
 function buildDetailNav(record, mode) {
-  const items = [];
-
-  if (mode === "routes") {
-    const subarea = record.subarea ? subareaById.get(String(record.subarea)) : null;
-    const area = record.area ? areaById.get(String(record.area)) : subarea ? areaById.get(String(subarea.area)) : null;
-
-    if (area) {
-      items.push(`<button class="detail-nav-chip" type="button" data-nav-mode="areas" data-nav-id="${area.area_id}">${escapeHtml(area.name)}</button>`);
-    }
-    if (subarea) {
-      items.push(`<button class="detail-nav-chip" type="button" data-nav-mode="subareas" data-nav-id="${subarea.subarea_id}">${escapeHtml(subarea.name)}</button>`);
-    }
-    items.push(`<span class="detail-nav-current">${escapeHtml(record.name || "Route")}</span>`);
-  } else if (mode === "subareas") {
-    const area = record.area ? areaById.get(String(record.area)) : null;
-    if (area) {
-      items.push(`<button class="detail-nav-chip" type="button" data-nav-mode="areas" data-nav-id="${area.area_id}">${escapeHtml(area.name)}</button>`);
-    }
-    items.push(`<span class="detail-nav-current">${escapeHtml(record.name || "Subarea")}</span>`);
-  } else if (mode === "areas") {
-    items.push(`<span class="detail-nav-current">${escapeHtml(record.name || "Area")}</span>`);
-  }
-
-  if (!items.length) {
-    return "";
-  }
-
-  return `<div class="detail-nav-row">${items.join('<span class="detail-nav-sep">/</span>')}</div>`;
+  return "";
 }
 
 function bindDetailNav() {
