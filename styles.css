@@ -171,6 +171,10 @@ body::before {
   line-height: 1.35;
 }
 
+.detail-summary:empty {
+  display: none;
+}
+
 .eyebrow {
   margin: 0 0 6px;
   text-transform: uppercase;

@@ -198,7 +198,7 @@ function renderDetail() {
     if (el.detailTitle) {
       el.detailTitle.textContent = "Choose a route";
     }
-    el.detailSubtitle.textContent = "Area and subarea details will appear here when filters are applied.";
+    el.detailSubtitle.textContent = "";
     if (el.detailNav) el.detailNav.innerHTML = "";
     el.detailDescription.innerHTML = "Use the filters or click a route to inspect details without leaving the page.";
     if (el.detailRelated) el.detailRelated.innerHTML = "";
@@ -211,7 +211,7 @@ function renderDetail() {
   if (el.detailTitle) {
     el.detailTitle.textContent = recordTitle(record);
   }
-  el.detailSubtitle.textContent = detailSummary(record, mode);
+  el.detailSubtitle.textContent = "";
   if (el.detailNav) {
     el.detailNav.innerHTML = buildDetailNav(record, mode);
     bindDetailNav();
@@ -293,22 +293,6 @@ function buildDetailNav(record, mode) {
   return `<div class="detail-nav-row">${items.join("")}</div>`;
 }
 
-function detailSummary(record, mode) {
-  if (mode === "routes") {
-    return [record.grade, routeTypeLabel(record.type), aspectSunLabel(record.aspect)].filter(Boolean).join(" | ");
-  }
-  if (mode === "subareas") {
-    return [record.area_name, aspectSunLabel(record.aspect)].filter(Boolean).join(" | ");
-  }
-  if (mode === "areas") {
-    return [
-      record.sector_name,
-      record.drive_time ? `${record.drive_time} min drive` : "",
-      record.approach_time ? `${record.approach_time} min approach` : ""
-    ].filter(Boolean).join(" | ");
-  }
-  return recordMeta(record, mode);
-}
 
 function bindDetailNav() {
   document.querySelectorAll("[data-nav-mode][data-nav-id]").forEach((button) => {
