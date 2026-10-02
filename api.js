@@ -238,3 +238,30 @@ function enrichRoute(route) {
   };
 }
 
+
+async function apiRequest(path, options = {}, retryAfterRefresh = true) {
+  const url = path.startsWith("http") ? path : `${state.apiBase}${path}`;
+  const headers = { Accept: "application/json", ...(options.headers || {}) };
+  if (state.auth.accessToken && url.startsWith(state.apiBase)) headers.Authorization = `Bearer ${state.auth.accessToken}`;
+  if (options.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
+  try {
+    const response = await fetch(url, { ...options, headers });
+    if (response.status === 401 && retryAfterRefresh && state.auth.refreshToken) {
+      if (await refreshAccessToken()) return apiRequest(path, options, false);
+      clearAuthTokens();
+      window.dispatchEvent(new Event("lolo:auth-expired"));
+    }
+    const data = response.status === 204 ? null : await response.json().catch(() => ({}));
+    if (!response.ok) return { ok: false, error: data?.detail || Object.values(data || {}).flat().find(Boolean) || `${response.status} ${response.statusText}`, data };
+    return { ok: true, data };
+  } catch (error) {
+    return { ok: false, error: friendlyFetchError(error) };
+  }
+}
+
+const getProfile = () => apiRequest("/api/profile/");
+const changePassword = (current_password, new_password) => apiRequest("/api/profile/password/", { method: "POST", body: JSON.stringify({ current_password, new_password }) });
+const getLogbook = () => apiRequest("/api/logbook/");
+const createRouteLog = (payload) => apiRequest("/api/logbook/", { method: "POST", body: JSON.stringify(payload) });
+const updateRouteLog = (logId, payload) => apiRequest(`/api/logbook/${logId}/`, { method: "PATCH", body: JSON.stringify(payload) });
+const deleteRouteLog = (logId) => apiRequest(`/api/logbook/${logId}/`, { method: "DELETE" });

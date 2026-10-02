@@ -23,7 +23,7 @@
       href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=64" />
+    <link rel="stylesheet" href="./styles.css?v=65" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-BYGF2CWJ49"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -73,7 +73,14 @@
         <section class="panel controls-panel">
           <div class="brand-lockup">
             <p class="app-title">A Rock Climber's Guide to Lolo Pass Web App</p>
-            <button id="logout-button" class="logout-button" type="button">Log out</button>
+            <div class="account-menu-wrap">
+              <button id="account-menu-button" class="account-menu-button" type="button" aria-label="Account menu" aria-expanded="false">☰</button>
+              <div id="account-menu" class="account-menu" hidden>
+                <button type="button" data-account-view="profile">Profile</button>
+                <button type="button" data-account-view="logbook">Log Book</button>
+                <button id="logout-button" type="button">Log out</button>
+              </div>
+            </div>
           </div>
 
           <div id="filters-panel-body" class="filters-panel-body">
@@ -142,6 +149,7 @@
         <div id="detail-description" class="description-card empty-state">
           Use the filters or click a route to inspect details without leaving the page.
         </div>
+        <div id="detail-log" class="detail-log"></div>
         <div id="detail-related" class="detail-related"></div>
         <div id="detail-facts" class="facts-grid"></div>
       </section>
@@ -161,14 +169,21 @@
       </section>
     </main>
 
+    <div id="account-modal" class="account-modal" hidden>
+      <div class="account-modal-card" role="dialog" aria-modal="true" aria-labelledby="account-modal-title">
+        <div class="account-modal-head"><h2 id="account-modal-title">Profile</h2><button id="account-modal-close" type="button" aria-label="Close">×</button></div>
+        <div id="account-modal-body"></div>
+      </div>
+    </div>
+
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-    <script src="./state.js?v=64"></script>
-    <script src="./dom.js?v=64"></script>
-    <script src="./utils/utils.js?v=64"></script>
-    <script src="./api.js?v=64"></script>
-    <script src="./events.js?v=64"></script>
-    <script src="./map.js?v=64"></script>
-    <script src="./render.js?v=64"></script>
-    <script src="./app.js?v=64"></script>
+    <script src="./state.js?v=65"></script>
+    <script src="./dom.js?v=65"></script>
+    <script src="./utils/utils.js?v=65"></script>
+    <script src="./api.js?v=65"></script>
+    <script src="./events.js?v=65"></script>
+    <script src="./map.js?v=65"></script>
+    <script src="./render.js?v=65"></script>
+    <script src="./app.js?v=65"></script>
   </body>
 </html>

@@ -61,6 +61,7 @@ function bindEvents() {
 
     renderFilters();
     await loadRoutesFromBackend();
+    if (state.filters.areaId) updateMap(areaById.get(String(state.filters.areaId)), "areas");
     trackEvent("filter_change", {
       filter_type: "area",
       value: state.filters.areaId || "all"
@@ -82,6 +83,7 @@ function bindEvents() {
 
     renderFilters();
     await loadRoutesFromBackend();
+    if (state.filters.subareaId) updateMap(subareaById.get(String(state.filters.subareaId)), "subareas");
     trackEvent("filter_change", {
       filter_type: "subarea",
       value: state.filters.subareaId || "all"
@@ -132,7 +134,10 @@ function jumpTo(mode, id) {
     }
   }
 
-  loadRoutesFromBackend();
+  loadRoutesFromBackend().then(() => {
+    if (mode === "areas") updateMap(areaById.get(String(id)), "areas");
+    if (mode === "subareas") updateMap(subareaById.get(String(id)), "subareas");
+  });
 }
 
 function areaMatchesSector(areaId, sectorId) {

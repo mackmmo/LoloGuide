@@ -28,6 +28,40 @@ function showLogin(message = "") {
   if (message) setAuthMessage(message, "error");
 }
 
+async function loadLogbook() {
+  const result = await getLogbook();
+  if (result.ok) state.logbook = Array.isArray(result.data) ? result.data : [];
+  return result;
+}
+
+async function openAccountView(view) {
+  el.accountMenu.hidden = true;
+  el.accountMenuButton.setAttribute("aria-expanded", "false");
+  el.accountModal.hidden = false;
+  if (view === "profile") {
+    el.accountModalTitle.textContent = "Profile";
+    el.accountModalBody.innerHTML = `<p class="muted">Loading profile…</p>`;
+    const result = await getProfile();
+    if (!result.ok) { el.accountModalBody.textContent = String(result.error); return; }
+    state.profile = result.data;
+    el.accountModalBody.innerHTML = `<div class="profile-summary"><strong>${escapeHtml(result.data.username || "")}</strong><span>${escapeHtml(result.data.email || "")}</span></div><form id="password-form" class="account-form"><h3>Change password</h3><label><span>Current password</span><input name="current_password" type="password" required></label><label><span>New password</span><input name="new_password" type="password" required></label><button class="auth-primary" type="submit">Change password</button><p id="password-message" class="route-log-message"></p></form>`;
+    document.querySelector("#password-form")?.addEventListener("submit", async (event) => { event.preventDefault(); const fd=new FormData(event.currentTarget); const r=await changePassword(fd.get("current_password"),fd.get("new_password")); document.querySelector("#password-message").textContent=r.ok?"Password changed.":String(r.error); if(r.ok) event.currentTarget.reset(); });
+  } else {
+    el.accountModalTitle.textContent = "Log Book";
+    el.accountModalBody.innerHTML = `<p class="muted">Loading Log Book…</p>`;
+    await loadLogbook();
+    renderLogbookModal();
+  }
+}
+
+function renderLogbookModal() {
+  const entries = state.logbook || [];
+  if (!entries.length) { el.accountModalBody.innerHTML = `<div class="description-card empty-state">No routes logged yet. Open a route and use Log Route to add a project or send.</div>`; return; }
+  const projects=entries.filter(x=>x.status!=="sent"), sends=entries.filter(x=>x.status==="sent");
+  const cards=(items)=>items.length?items.map(x=>`<article class="logbook-entry"><div><strong>${escapeHtml(x.route_name||`Route ${x.route}`)}</strong><span>${escapeHtml(x.grade||"")} · ${Number(x.attempts||0)} attempt${Number(x.attempts||0)===1?"":"s"}</span></div><span class="logbook-status">${escapeHtml(x.status==="sent"?(x.send_style||"sent"):"project")}</span>${x.date_sent?`<small>${escapeHtml(x.date_sent)}</small>`:""}${x.beta?`<p><strong>Beta</strong> ${escapeHtml(x.beta)}</p>`:""}</article>`).join(""):`<p class="muted">None yet.</p>`;
+  el.accountModalBody.innerHTML=`<section class="logbook-section"><h3>Projects</h3>${cards(projects)}</section><section class="logbook-section"><h3>Sends</h3>${cards(sends)}</section><p class="muted logbook-hint">To edit an entry, open that route in the guide and update Your Log.</p>`;
+}
+
 function showGuide() {
   el.authScreen.hidden = true;
   el.appShell.hidden = false;
@@ -43,6 +77,7 @@ function showGuide() {
     setTimeout(() => map?.resize(), 0);
   }
   loadAllData();
+  loadLogbook();
 }
 
 function bindAuthEvents() {
@@ -101,6 +136,15 @@ function bindAuthEvents() {
     setAuthMessage("Account created. Log in to open the guide.", "success");
     el.loginPassword.focus();
   });
+
+  el.accountMenuButton.addEventListener("click", () => {
+    el.accountMenu.hidden = !el.accountMenu.hidden;
+    el.accountMenuButton.setAttribute("aria-expanded", String(!el.accountMenu.hidden));
+  });
+  el.accountMenu.querySelectorAll("[data-account-view]").forEach((button) => button.addEventListener("click", () => openAccountView(button.dataset.accountView)));
+  el.accountModalClose.addEventListener("click", () => { el.accountModal.hidden = true; });
+  el.accountModal.addEventListener("click", (event) => { if (event.target === el.accountModal) el.accountModal.hidden = true; });
+  document.addEventListener("click", (event) => { if (!event.target.closest(".account-menu-wrap")) { el.accountMenu.hidden = true; el.accountMenuButton.setAttribute("aria-expanded", "false"); } });
 
   el.logoutButton.addEventListener("click", () => {
     clearAuthTokens();

@@ -581,3 +581,39 @@ label {
 .brand-lockup { position: relative; padding-inline: 64px; }
 .logout-button { position: absolute; right: 0; top: 50%; transform: translateY(-50%); border: 1px solid var(--line); border-radius: 10px; padding: 7px 9px; background: rgba(255,255,255,.65); color: var(--muted); font: inherit; font-size: .76rem; font-weight: 700; cursor: pointer; }
 @media (max-width: 520px) { .auth-screen { padding: 10px; } .auth-card { padding: 18px; border-radius: 22px; } .auth-logo { width: 210px; } }
+
+/* Account menu, route logging, and log book */
+.brand-lockup { position: relative; padding-right: 54px; }
+.account-menu-wrap { position: absolute; right: 0; top: 50%; transform: translateY(-50%); z-index: 20; }
+.account-menu-button { width: 42px; height: 42px; padding: 0; border-radius: 12px; font-size: 1.25rem; line-height: 1; background: rgba(255,255,255,.78); }
+.account-menu { position: absolute; right: 0; top: calc(100% + 8px); width: 170px; padding: 7px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel-strong); box-shadow: var(--shadow); }
+.account-menu button { width: 100%; padding: 9px 10px; border: 0; border-radius: 9px; text-align: left; background: transparent; }
+.account-menu button:hover { background: rgba(22,40,31,.06); transform: none; }
+.account-modal { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px; background: rgba(12,24,18,.48); backdrop-filter: blur(5px); }
+.account-modal-card { width: min(720px, 100%); max-height: min(82vh, 850px); overflow: auto; padding: 22px; border-radius: 24px; background: var(--panel-strong); box-shadow: var(--shadow); }
+.account-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.account-modal-head h2 { margin: 0; }
+#account-modal-close { width: 40px; height: 40px; padding: 0; font-size: 1.5rem; }
+.profile-summary { display: grid; gap: 3px; padding: 16px; margin-bottom: 18px; border-radius: 16px; background: rgba(255,255,255,.7); }
+.profile-summary span { color: var(--muted); }
+.account-form, .route-log-form { display: grid; gap: 12px; }
+.account-form h3 { margin: 0; }
+.detail-log { min-height: 0; }
+.route-log-card { padding: 16px 18px; border-radius: 22px; background: rgba(255,255,255,.72); }
+.route-log-head { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.route-log-head span { color: var(--accent); font-size: .86rem; font-weight: 700; text-transform: capitalize; }
+.route-log-form { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.route-log-form label { min-width: 0; }
+.route-log-form input, .route-log-form select, .route-log-form textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.9); color: var(--ink); font: inherit; box-sizing: border-box; }
+.route-log-beta, .route-log-actions, .route-log-message { grid-column: 1 / -1; }
+.route-log-actions { display: flex; gap: 10px; }
+.route-log-actions button { flex: 1; }
+.route-log-message { min-height: 1.2em; margin: 0; color: #a13535; font-size: .85rem; }
+.logbook-section + .logbook-section { margin-top: 24px; }
+.logbook-entry { display: grid; grid-template-columns: 1fr auto; gap: 5px 14px; padding: 14px 16px; margin-top: 10px; border-radius: 16px; background: rgba(255,255,255,.72); }
+.logbook-entry div { display: grid; }
+.logbook-entry div span, .logbook-entry small { color: var(--muted); }
+.logbook-entry p { grid-column: 1 / -1; margin: 6px 0 0; }
+.logbook-status { font-weight: 700; text-transform: capitalize; color: var(--accent); }
+.logbook-hint { margin-top: 18px; }
+@media (max-width: 560px) { .route-log-form { grid-template-columns: 1fr; } .route-log-beta,.route-log-actions,.route-log-message { grid-column: 1; } }

@@ -33,5 +33,7 @@ const state = {
     sectors: true,
     areas: true
   },
-  filtersCollapsed: false
+  filtersCollapsed: false,
+  profile: null,
+  logbook: []
 };

@@ -498,9 +498,23 @@ async function focusAreaFromMap(areaOrId) {
   await loadRoutesFromBackend();
 }
 
-function fitMapToOverview() {}
+function fitMapToOverview() {
+  if (!map) return;
+  const points = state.datasets.areas.map((area) => parsePoint(area.centroid)).filter(Boolean);
+  if (!points.length) return;
+  const bounds = new maplibregl.LngLatBounds();
+  points.forEach(([lat, lon]) => bounds.extend([lon, lat]));
+  map.fitBounds(bounds, { padding: 70, maxZoom: 11.5, duration: 700 });
+}
 
-function updateMap(record) {}
+function updateMap(record, mode = "routes") {
+  if (!map || !record) return;
+  const point = parsePoint(record.centroid);
+  if (!point) return;
+  const [lat, lon] = point;
+  const zoomByMode = { routes: 16, subareas: 14.5, areas: 13, sectors: 11.5 };
+  map.easeTo({ center: [lon, lat], zoom: zoomByMode[mode] || 13, duration: 750, essential: true });
+}
 
 function parsePoint(value) {
   if (!value || typeof value !== "string") {

@@ -13,6 +13,12 @@ const el = {
   registerPasswordConfirm: document.querySelector("#register-password-confirm"),
   authMessage: document.querySelector("#auth-message"),
   logoutButton: document.querySelector("#logout-button"),
+  accountMenuButton: document.querySelector("#account-menu-button"),
+  accountMenu: document.querySelector("#account-menu"),
+  accountModal: document.querySelector("#account-modal"),
+  accountModalTitle: document.querySelector("#account-modal-title"),
+  accountModalBody: document.querySelector("#account-modal-body"),
+  accountModalClose: document.querySelector("#account-modal-close"),
   statusBanner: document.querySelector("#status-banner"),
   statsGrid: document.querySelector("#stats-grid"),
   resetAll: document.querySelector("#reset-all"),
@@ -31,6 +37,7 @@ const el = {
   detailSubtitle: document.querySelector("#detail-subtitle"),
   detailNav: document.querySelector("#detail-nav"),
   detailDescription: document.querySelector("#detail-description"),
+  detailLog: document.querySelector("#detail-log"),
   detailRelated: document.querySelector("#detail-related"),
   detailFacts: document.querySelector("#detail-facts")
 };

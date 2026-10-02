@@ -201,6 +201,7 @@ function renderDetail() {
     el.detailSubtitle.textContent = "";
     if (el.detailNav) el.detailNav.innerHTML = "";
     el.detailDescription.innerHTML = "Use the filters or click a route to inspect details without leaving the page.";
+    if (el.detailLog) el.detailLog.innerHTML = "";
     if (el.detailRelated) el.detailRelated.innerHTML = "";
     el.detailFacts.innerHTML = "";
     updateMap(null);
@@ -222,7 +223,8 @@ function renderDetail() {
     bindDetailNav();
   }
   el.detailFacts.innerHTML = detailFacts(record, mode).map(renderFact).join("");
-  updateMap(mode === "routes" ? record : null);
+  if (el.detailLog) { el.detailLog.innerHTML = mode === "routes" ? buildRouteLogCard(record) : ""; bindRouteLogCard(record, mode); }
+  updateMap(record, mode);
 }
 
 function buildDetailDescription(record, mode) {
@@ -411,4 +413,51 @@ function routesForSubarea(subareaId) {
       }
       return String(left.name || "").localeCompare(String(right.name || ""));
     });
+}
+
+
+function existingRouteLog(routeId) {
+  return (state.logbook || []).find((entry) => String(entry.route) === String(routeId)) || null;
+}
+
+function buildRouteLogCard(route) {
+  const log = existingRouteLog(route.route_id);
+  const sent = log?.status === "sent";
+  return `
+    <div class="route-log-card">
+      <div class="route-log-head"><strong>${log ? "Your Log" : "Log Route"}</strong>${log ? `<span>${escapeHtml(sent ? (log.send_style || "Sent") : "Project")}</span>` : ""}</div>
+      <form id="route-log-form" class="route-log-form">
+        <label><span>Status</span><select name="status"><option value="project" ${!sent ? "selected" : ""}>Project</option><option value="sent" ${sent ? "selected" : ""}>Sent</option></select></label>
+        <label><span>Send style</span><select name="send_style"><option value="">—</option>${["onsight","flash","redpoint","pinkpoint"].map(v => `<option value="${v}" ${log?.send_style === v ? "selected" : ""}>${v[0].toUpperCase()+v.slice(1)}</option>`).join("")}</select></label>
+        <label><span>Attempts</span><input name="attempts" type="number" min="0" value="${Number(log?.attempts || 0)}" /></label>
+        <label><span>Date sent</span><input name="date_sent" type="date" value="${escapeHtml(log?.date_sent || "")}" /></label>
+        <label class="route-log-beta"><span>Private beta</span><textarea name="beta" rows="3" placeholder="Your private beta…">${escapeHtml(log?.beta || "")}</textarea></label>
+        <div class="route-log-actions"><button class="auth-primary" type="submit">${log ? "Update Log" : "Save Log"}</button>${log ? `<button id="route-log-delete" class="ghost" type="button">Remove</button>` : ""}</div>
+        <p id="route-log-message" class="route-log-message"></p>
+      </form>
+    </div>`;
+}
+
+function bindRouteLogCard(route, mode) {
+  if (mode !== "routes" || !route) return;
+  const form = document.querySelector("#route-log-form");
+  if (!form) return;
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const fd = new FormData(form);
+    const payload = { route: route.route_id, status: fd.get("status"), send_style: fd.get("send_style") || null, attempts: Number(fd.get("attempts") || 0), date_sent: fd.get("date_sent") || null, beta: fd.get("beta") || null };
+    if (payload.status !== "sent") { payload.send_style = null; payload.date_sent = null; }
+    const existing = existingRouteLog(route.route_id);
+    const result = existing ? await updateRouteLog(existing.log_id, payload) : await createRouteLog(payload);
+    const msg = document.querySelector("#route-log-message");
+    if (!result.ok) { if (msg) msg.textContent = String(result.error); return; }
+    await loadLogbook();
+    renderDetail();
+  });
+  document.querySelector("#route-log-delete")?.addEventListener("click", async () => {
+    const existing = existingRouteLog(route.route_id);
+    if (!existing || !confirm("Remove this route from your Log Book?")) return;
+    const result = await deleteRouteLog(existing.log_id);
+    if (result.ok) { await loadLogbook(); renderDetail(); }
+  });
 }
