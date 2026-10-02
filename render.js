@@ -435,12 +435,8 @@ function formatLogSummary(log) {
 function buildRouteLogCard(route) {
   const log = existingRouteLog(route.route_id);
   return `
-    <div class="route-log-overview">
-      <div class="route-log-overview-copy">
-        <strong>${log ? "Your Log" : "Log this route"}</strong>
-        <span>${log ? escapeHtml(formatLogSummary(log)) : "Track a project or record a send."}</span>
-      </div>
-      <button id="route-log-open" class="route-log-open auth-primary" type="button">${log ? "Edit Log" : "Log Route"}</button>
+    <div class="route-log-overview route-log-overview--compact">
+      <button id="route-log-open" class="route-log-open route-log-open--compact" type="button">${log ? "Edit Log" : "Log Route"}</button>
     </div>`;
 }
 
