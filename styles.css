@@ -778,49 +778,52 @@ label {
 
 .detail-panel.community-mode {
   grid-template-rows: auto auto minmax(0, 1fr);
+  overflow: hidden;
 }
 
-.detail-panel.community-mode #detail-description {
-  min-height: 0;
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 0;
-  background: transparent;
-}
-
-/* Remove the unused Details sections from layout entirely */
-.detail-panel.community-mode #detail-facts,
 .detail-panel.community-mode #detail-log,
-.detail-panel.community-mode #detail-related {
+.detail-panel.community-mode #detail-related,
+.detail-panel.community-mode #detail-facts {
   display: none;
 }
 
-.community-panel--full {
+/* Override the normal 28vh detail-description limit in Community mode. */
+.detail-panel.community-mode #detail-description {
+  min-height: 0;
+  max-height: none;
+  height: 100%;
   width: 100%;
-  min-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 12px 4px 28px;
+  background: transparent;
 }
 
-.community-send-section {
+.detail-panel.community-mode .community-panel--full {
+  width: 100%;
+  min-height: 100%;
+  padding: 0;
+}
+
+.detail-panel.community-mode .community-send-section {
   width: 100%;
   margin-bottom: 32px;
 }
 
-.community-panel--full .community-stats {
+.detail-panel.community-mode .community-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   width: 100%;
 }
 
-.community-panel--full .community-comments {
+.detail-panel.community-mode .community-comments {
   width: 100%;
   display: grid;
   gap: 16px;
 }
 
-.community-panel--full .community-comment-form,
-.community-panel--full .community-comment-list {
+.detail-panel.community-mode .community-comment-form,
+.detail-panel.community-mode .community-comment-list {
   width: 100%;
 }

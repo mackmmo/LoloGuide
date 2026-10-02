@@ -195,6 +195,9 @@ function renderDetail() {
   const current = currentDetailRecord();
 
   if (!current) {
+    document.querySelector(".detail-panel")?.classList.remove("community-mode");
+    el.detailDescription.classList.remove("community-full-panel");
+
     if (el.detailTitle) el.detailTitle.textContent = "Choose a route";
     el.detailSubtitle.textContent = "";
     if (el.detailNav) el.detailNav.innerHTML = "";
