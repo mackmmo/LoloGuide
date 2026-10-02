@@ -1,23 +1,92 @@
-async function fetchJson(url) {
+function saveAuthTokens(access, refresh = state.auth.refreshToken) {
+  state.auth.accessToken = access || "";
+  state.auth.refreshToken = refresh || "";
+
+  if (state.auth.accessToken) sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, state.auth.accessToken);
+  else sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+
+  if (state.auth.refreshToken) sessionStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, state.auth.refreshToken);
+  else sessionStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+}
+
+function clearAuthTokens() {
+  saveAuthTokens("", "");
+}
+
+async function loginUser(username, password) {
+  return postAuth(`${state.apiBase}/api/token/`, { username, password }, true);
+}
+
+async function registerUser(username, email, password, passwordConfirm) {
+  return postAuth(`${state.apiBase}/api/register/`, {
+    username,
+    email,
+    password,
+    password_confirm: passwordConfirm
+  }, false);
+}
+
+async function postAuth(url, payload, storeTokens) {
   try {
     const response = await fetch(url, {
-      headers: { Accept: "application/json" }
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(payload)
     });
+    const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      return {
-        ok: false,
-        error: `${response.status} ${response.statusText}`
-      };
+      const firstError = data.detail || Object.values(data).flat().find(Boolean);
+      return { ok: false, error: firstError || `${response.status} ${response.statusText}` };
     }
 
-    const data = await response.json();
+    if (storeTokens) {
+      if (!data.access) return { ok: false, error: "Login succeeded but no access token was returned." };
+      saveAuthTokens(data.access, data.refresh || "");
+    }
     return { ok: true, data };
   } catch (error) {
-    return {
-      ok: false,
-      error: friendlyFetchError(error)
-    };
+    return { ok: false, error: friendlyFetchError(error) };
+  }
+}
+
+async function refreshAccessToken() {
+  if (!state.auth.refreshToken) return false;
+  try {
+    const response = await fetch(`${state.apiBase}/api/token/refresh/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ refresh: state.auth.refreshToken })
+    });
+    if (!response.ok) return false;
+    const data = await response.json();
+    if (!data.access) return false;
+    saveAuthTokens(data.access, data.refresh || state.auth.refreshToken);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function fetchJson(url, retryAfterRefresh = true) {
+  try {
+    const headers = { Accept: "application/json" };
+    if (state.auth.accessToken && url.startsWith(state.apiBase)) {
+      headers.Authorization = `Bearer ${state.auth.accessToken}`;
+    }
+
+    const response = await fetch(url, { headers });
+
+    if (response.status === 401 && retryAfterRefresh && state.auth.refreshToken) {
+      if (await refreshAccessToken()) return fetchJson(url, false);
+      clearAuthTokens();
+      window.dispatchEvent(new Event("lolo:auth-expired"));
+    }
+
+    if (!response.ok) return { ok: false, error: `${response.status} ${response.statusText}` };
+    return { ok: true, data: await response.json() };
+  } catch (error) {
+    return { ok: false, error: friendlyFetchError(error) };
   }
 }
 

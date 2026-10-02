@@ -23,7 +23,7 @@
       href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=63" />
+    <link rel="stylesheet" href="./styles.css?v=64" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-BYGF2CWJ49"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -37,11 +37,43 @@
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KBVK6WTV"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
-    <main class="app-shell app-shell--map-first">
+    <section id="auth-screen" class="auth-screen">
+      <div class="auth-card">
+        <img class="auth-logo" src="./logo.png" alt="A Rock Climber's Guide to Lolo Pass" />
+        <div class="auth-copy">
+          <p class="eyebrow">Lolo Pass climbing guide</p>
+          <h1>Welcome</h1>
+          <p class="muted">Log in to open the guide, or create an account if this is your first visit.</p>
+        </div>
+
+        <div class="auth-tabs" role="tablist" aria-label="Account">
+          <button id="login-tab" class="auth-tab is-active" type="button">Log in</button>
+          <button id="register-tab" class="auth-tab" type="button">Create account</button>
+        </div>
+
+        <form id="login-form" class="auth-form">
+          <label><span>Username</span><input id="login-username" autocomplete="username" required /></label>
+          <label><span>Password</span><input id="login-password" type="password" autocomplete="current-password" required /></label>
+          <button class="auth-primary" type="submit">Log in</button>
+        </form>
+
+        <form id="register-form" class="auth-form" hidden>
+          <label><span>Username</span><input id="register-username" autocomplete="username" required /></label>
+          <label><span>Email</span><input id="register-email" type="email" autocomplete="email" required /></label>
+          <label><span>Password</span><input id="register-password" type="password" autocomplete="new-password" required /></label>
+          <label><span>Confirm password</span><input id="register-password-confirm" type="password" autocomplete="new-password" required /></label>
+          <button class="auth-primary" type="submit">Create account</button>
+        </form>
+        <p id="auth-message" class="auth-message" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <main id="app-shell" class="app-shell app-shell--map-first" hidden>
       <aside class="sidebar-column">
         <section class="panel controls-panel">
           <div class="brand-lockup">
             <p class="app-title">A Rock Climber's Guide to Lolo Pass Web App</p>
+            <button id="logout-button" class="logout-button" type="button">Log out</button>
           </div>
 
           <div id="filters-panel-body" class="filters-panel-body">
@@ -130,13 +162,13 @@
     </main>
 
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-    <script src="./state.js?v=63"></script>
-    <script src="./dom.js?v=63"></script>
-    <script src="./utils/utils.js?v=63"></script>
-    <script src="./api.js?v=63"></script>
-    <script src="./events.js?v=63"></script>
-    <script src="./map.js?v=63"></script>
-    <script src="./render.js?v=63"></script>
-    <script src="./app.js?v=63"></script>
+    <script src="./state.js?v=64"></script>
+    <script src="./dom.js?v=64"></script>
+    <script src="./utils/utils.js?v=64"></script>
+    <script src="./api.js?v=64"></script>
+    <script src="./events.js?v=64"></script>
+    <script src="./map.js?v=64"></script>
+    <script src="./render.js?v=64"></script>
+    <script src="./app.js?v=64"></script>
   </body>
 </html>
