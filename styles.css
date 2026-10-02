@@ -683,3 +683,44 @@ label {
   background: var(--accent-soft);
   border-color: var(--accent);
 }
+
+
+/* Forgot/reset password */
+.auth-link-button {
+  appearance: none;
+  align-self: flex-end;
+  width: auto;
+  margin: -4px 0 2px;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: .84rem;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.auth-link-button:hover {
+  opacity: .75;
+}
+
+.auth-link-button--center {
+  align-self: center;
+  margin-top: 2px;
+}
+
+.auth-form-heading {
+  margin-bottom: 2px;
+}
+
+.auth-form-heading h2 {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+}
+
+.auth-form-heading p {
+  margin: 0;
+  line-height: 1.45;
+}

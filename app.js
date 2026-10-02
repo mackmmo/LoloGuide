@@ -14,10 +14,19 @@ function setAuthMessage(message = "", kind = "") {
 
 function showAuthMode(mode) {
   const login = mode === "login";
+  const register = mode === "register";
+  const forgot = mode === "forgot";
+  const reset = mode === "reset";
+
   el.loginForm.hidden = !login;
-  el.registerForm.hidden = login;
+  el.registerForm.hidden = !register;
+  el.forgotPasswordForm.hidden = !forgot;
+  el.resetPasswordForm.hidden = !reset;
+
+  const showTabs = login || register;
+  document.querySelector(".auth-tabs").hidden = !showTabs;
   el.loginTab.classList.toggle("is-active", login);
-  el.registerTab.classList.toggle("is-active", !login);
+  el.registerTab.classList.toggle("is-active", register);
   setAuthMessage();
 }
 
@@ -83,6 +92,79 @@ function showGuide() {
 function bindAuthEvents() {
   el.loginTab.addEventListener("click", () => showAuthMode("login"));
   el.registerTab.addEventListener("click", () => showAuthMode("register"));
+
+  el.forgotPasswordButton.addEventListener("click", () => {
+    showAuthMode("forgot");
+    el.forgotPasswordEmail.focus();
+  });
+
+  el.forgotPasswordBack.addEventListener("click", () => {
+    showAuthMode("login");
+    el.loginUsername.focus();
+  });
+
+  el.forgotPasswordForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = el.forgotPasswordForm.querySelector("button[type=submit]");
+    button.disabled = true;
+    button.textContent = "Sending…";
+    setAuthMessage();
+
+    const result = await requestPasswordReset(el.forgotPasswordEmail.value.trim());
+
+    button.disabled = false;
+    button.textContent = "Send reset link";
+
+    if (!result.ok) {
+      setAuthMessage(String(result.error), "error");
+      return;
+    }
+
+    el.forgotPasswordForm.reset();
+    setAuthMessage(
+      result.data?.detail || "If an account exists for that email, a password reset link has been sent.",
+      "success"
+    );
+  });
+
+  el.resetPasswordForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    if (el.resetPassword.value !== el.resetPasswordConfirm.value) {
+      setAuthMessage("Passwords do not match.", "error");
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const uid = params.get("reset_uid");
+    const token = params.get("reset_token");
+
+    if (!uid || !token) {
+      setAuthMessage("This password reset link is invalid or incomplete.", "error");
+      return;
+    }
+
+    const button = el.resetPasswordForm.querySelector("button[type=submit]");
+    button.disabled = true;
+    button.textContent = "Resetting…";
+    setAuthMessage();
+
+    const result = await confirmPasswordReset(uid, token, el.resetPassword.value);
+
+    button.disabled = false;
+    button.textContent = "Reset password";
+
+    if (!result.ok) {
+      setAuthMessage(String(result.error), "error");
+      return;
+    }
+
+    el.resetPasswordForm.reset();
+    window.history.replaceState({}, document.title, window.location.pathname);
+    showAuthMode("login");
+    setAuthMessage("Password reset successfully. You can log in now.", "success");
+    el.loginUsername.focus();
+  });
 
   el.loginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -158,6 +240,19 @@ function bindAuthEvents() {
 
 function init() {
   bindAuthEvents();
+
+  const params = new URLSearchParams(window.location.search);
+  const hasResetLink = params.has("reset_uid") && params.has("reset_token");
+
+  if (hasResetLink) {
+    clearAuthTokens();
+    el.appShell.hidden = true;
+    el.authScreen.hidden = false;
+    showAuthMode("reset");
+    el.resetPassword.focus();
+    return;
+  }
+
   if (state.auth.accessToken) showGuide();
   else showLogin();
 }

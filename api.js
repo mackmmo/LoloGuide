@@ -26,6 +26,18 @@ async function registerUser(username, email, password, passwordConfirm) {
   }, false);
 }
 
+async function requestPasswordReset(email) {
+  return postAuth(`${state.apiBase}/api/password-reset/`, { email }, false);
+}
+
+async function confirmPasswordReset(uid, token, newPassword) {
+  return postAuth(`${state.apiBase}/api/password-reset-confirm/`, {
+    uid,
+    token,
+    new_password: newPassword
+  }, false);
+}
+
 async function postAuth(url, payload, storeTokens) {
   try {
     const response = await fetch(url, {
