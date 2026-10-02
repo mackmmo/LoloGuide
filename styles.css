@@ -774,33 +774,37 @@ label {
 .logbook-tabs { margin-bottom: 16px; }
 .logbook-todo-entry { grid-template-columns: 1fr auto; }
 
-/* Full-panel Community view */
+/* Community takes over the entire remaining detail panel */
 
-/* Full-panel Community view */
+.detail-panel.community-mode {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
 
-.community-full-panel {
+.detail-panel.community-mode #detail-description {
   min-height: 0;
   height: 100%;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 0;
   background: transparent;
 }
 
+/* Remove the unused Details sections from layout entirely */
+.detail-panel.community-mode #detail-facts,
+.detail-panel.community-mode #detail-log,
+.detail-panel.community-mode #detail-related {
+  display: none;
+}
+
 .community-panel--full {
   width: 100%;
-  height: 100%;
-  min-height: 0;
-
-  overflow-y: auto;
-  overflow-x: hidden;
-
-  padding: 8px 4px 24px;
-  display: block;
+  min-height: 100%;
+  padding: 12px 4px 28px;
 }
 
 .community-send-section {
   width: 100%;
-  margin: 0 0 28px;
+  margin-bottom: 32px;
 }
 
 .community-panel--full .community-stats {
@@ -811,15 +815,12 @@ label {
 }
 
 .community-panel--full .community-comments {
+  width: 100%;
   display: grid;
-  gap: 14px;
-  width: 100%;
+  gap: 16px;
 }
 
-.community-panel--full .community-comment-form {
-  width: 100%;
-}
-
+.community-panel--full .community-comment-form,
 .community-panel--full .community-comment-list {
   width: 100%;
 }

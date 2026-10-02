@@ -255,8 +255,9 @@ function renderDetail() {
 }
 
 function renderRouteDetailsPanel(record) {
+  document.querySelector(".detail-panel")?.classList.remove("community-mode");
   el.detailDescription.classList.remove("community-full-panel");
-  
+
   el.detailDescription.innerHTML = buildDetailDescription(record, "routes");
   if (el.detailRelated) el.detailRelated.innerHTML = "";
   el.detailFacts.innerHTML = detailFacts(record, "routes").map(renderFact).join("");
@@ -316,6 +317,8 @@ async function loadCommunity(routeId) {
 
 function renderCommunityPanel(route) {
   if (!route) return;
+
+  document.querySelector(".detail-panel")?.classList.add("community-mode");
 
   // Hide the normal Details layout while Community is active.
   if (el.detailLog) el.detailLog.innerHTML = "";
