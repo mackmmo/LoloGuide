@@ -617,3 +617,18 @@ label {
 .logbook-status { font-weight: 700; text-transform: capitalize; color: var(--accent); }
 .logbook-hint { margin-top: 18px; }
 @media (max-width: 560px) { .route-log-form { grid-template-columns: 1fr; } .route-log-beta,.route-log-actions,.route-log-message { grid-column: 1; } }
+
+
+/* Route log overview + modal */
+.route-log-overview { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 16px; border-radius: 18px; background: rgba(255,255,255,.72); }
+.route-log-overview-copy { display: grid; gap: 3px; min-width: 0; }
+.route-log-overview-copy span { color: var(--muted); font-size: .88rem; }
+.route-log-open { flex: 0 0 auto; margin: 0; white-space: nowrap; }
+.route-log-modal { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 20px; background: rgba(12,24,18,.5); backdrop-filter: blur(6px); }
+.route-log-modal-card { width: min(560px,100%); max-height: min(88vh,760px); overflow: auto; padding: 22px; border-radius: 24px; background: var(--panel-strong); box-shadow: var(--shadow); }
+.route-log-modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.route-log-modal-head .eyebrow { margin: 0 0 3px; }
+.route-log-modal-head h2 { margin: 0; }
+.route-log-modal-close { width: 40px; height: 40px; flex: 0 0 40px; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.75); font: inherit; font-size: 1.5rem; cursor: pointer; }
+.route-log-current { margin: 0 0 16px; padding: 10px 12px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+@media (max-width: 560px) { .route-log-overview { align-items: stretch; flex-direction: column; } .route-log-open { width: 100%; } .route-log-modal { padding: 10px; } .route-log-modal-card { padding: 18px; border-radius: 20px; } }

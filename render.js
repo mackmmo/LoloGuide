@@ -420,28 +420,83 @@ function existingRouteLog(routeId) {
   return (state.logbook || []).find((entry) => String(entry.route) === String(routeId)) || null;
 }
 
+function formatLogSummary(log) {
+  if (!log) return "";
+  if (log.status !== "sent") {
+    const attempts = Number(log.attempts || 0);
+    return `Project${attempts ? ` · ${attempts} attempt${attempts === 1 ? "" : "s"}` : ""}`;
+  }
+  const style = log.send_style ? log.send_style[0].toUpperCase() + log.send_style.slice(1) : "Sent";
+  const attempts = Number(log.attempts || 0);
+  const date = log.date_sent ? new Date(`${log.date_sent}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
+  return [style, attempts ? `${attempts} attempt${attempts === 1 ? "" : "s"}` : "", date].filter(Boolean).join(" · ");
+}
+
 function buildRouteLogCard(route) {
   const log = existingRouteLog(route.route_id);
-  const sent = log?.status === "sent";
   return `
-    <div class="route-log-card">
-      <div class="route-log-head"><strong>${log ? "Your Log" : "Log Route"}</strong>${log ? `<span>${escapeHtml(sent ? (log.send_style || "Sent") : "Project")}</span>` : ""}</div>
+    <div class="route-log-overview">
+      <div class="route-log-overview-copy">
+        <strong>${log ? "Your Log" : "Log this route"}</strong>
+        <span>${log ? escapeHtml(formatLogSummary(log)) : "Track a project or record a send."}</span>
+      </div>
+      <button id="route-log-open" class="route-log-open auth-primary" type="button">${log ? "Edit Log" : "Log Route"}</button>
+    </div>`;
+}
+
+function closeRouteLogModal() {
+  document.querySelector("#route-log-modal")?.remove();
+}
+
+function openRouteLogModal(route) {
+  closeRouteLogModal();
+  const log = existingRouteLog(route.route_id);
+  const sent = log?.status === "sent";
+  const modal = document.createElement("div");
+  modal.id = "route-log-modal";
+  modal.className = "route-log-modal";
+  modal.innerHTML = `
+    <div class="route-log-modal-card" role="dialog" aria-modal="true" aria-labelledby="route-log-modal-title">
+      <div class="route-log-modal-head">
+        <div><p class="eyebrow">${log ? "Your log" : "Log route"}</p><h2 id="route-log-modal-title">${escapeHtml(route.name || "Route")}</h2></div>
+        <button id="route-log-modal-close" class="route-log-modal-close" type="button" aria-label="Close">×</button>
+      </div>
+      ${log ? `<p class="route-log-current">${escapeHtml(formatLogSummary(log))}</p>` : ""}
       <form id="route-log-form" class="route-log-form">
         <label><span>Status</span><select name="status"><option value="project" ${!sent ? "selected" : ""}>Project</option><option value="sent" ${sent ? "selected" : ""}>Sent</option></select></label>
-        <label><span>Send style</span><select name="send_style"><option value="">—</option>${["onsight","flash","redpoint","pinkpoint"].map(v => `<option value="${v}" ${log?.send_style === v ? "selected" : ""}>${v[0].toUpperCase()+v.slice(1)}</option>`).join("")}</select></label>
+        <label class="route-log-send-field"><span>Send style</span><select name="send_style"><option value="">—</option>${["onsight","flash","redpoint","pinkpoint"].map(v => `<option value="${v}" ${log?.send_style === v ? "selected" : ""}>${v[0].toUpperCase()+v.slice(1)}</option>`).join("")}</select></label>
         <label><span>Attempts</span><input name="attempts" type="number" min="0" value="${Number(log?.attempts || 0)}" /></label>
-        <label><span>Date sent</span><input name="date_sent" type="date" value="${escapeHtml(log?.date_sent || "")}" /></label>
-        <label class="route-log-beta"><span>Private beta</span><textarea name="beta" rows="3" placeholder="Your private beta…">${escapeHtml(log?.beta || "")}</textarea></label>
+        <label class="route-log-date-field"><span>Date sent</span><input name="date_sent" type="date" value="${escapeHtml(log?.date_sent || "")}" /></label>
+        <label class="route-log-beta"><span>Private beta</span><textarea name="beta" rows="4" placeholder="Your private beta…">${escapeHtml(log?.beta || "")}</textarea></label>
         <div class="route-log-actions"><button class="auth-primary" type="submit">${log ? "Update Log" : "Save Log"}</button>${log ? `<button id="route-log-delete" class="ghost" type="button">Remove</button>` : ""}</div>
         <p id="route-log-message" class="route-log-message"></p>
       </form>
     </div>`;
-}
+  document.body.appendChild(modal);
 
-function bindRouteLogCard(route, mode) {
-  if (mode !== "routes" || !route) return;
-  const form = document.querySelector("#route-log-form");
-  if (!form) return;
+  const form = modal.querySelector("#route-log-form");
+  const status = form.elements.status;
+  const sendField = modal.querySelector(".route-log-send-field");
+  const dateField = modal.querySelector(".route-log-date-field");
+  const syncStatusFields = () => {
+    const isSent = status.value === "sent";
+    sendField.hidden = !isSent;
+    dateField.hidden = !isSent;
+  };
+  status.addEventListener("change", syncStatusFields);
+  syncStatusFields();
+
+  modal.querySelector("#route-log-modal-close").addEventListener("click", closeRouteLogModal);
+  modal.addEventListener("click", (event) => { if (event.target === modal) closeRouteLogModal(); });
+
+  const escapeHandler = (event) => {
+    if (event.key === "Escape" && document.querySelector("#route-log-modal")) {
+      closeRouteLogModal();
+      document.removeEventListener("keydown", escapeHandler);
+    }
+  };
+  document.addEventListener("keydown", escapeHandler);
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const fd = new FormData(form);
@@ -449,15 +504,22 @@ function bindRouteLogCard(route, mode) {
     if (payload.status !== "sent") { payload.send_style = null; payload.date_sent = null; }
     const existing = existingRouteLog(route.route_id);
     const result = existing ? await updateRouteLog(existing.log_id, payload) : await createRouteLog(payload);
-    const msg = document.querySelector("#route-log-message");
+    const msg = modal.querySelector("#route-log-message");
     if (!result.ok) { if (msg) msg.textContent = String(result.error); return; }
     await loadLogbook();
+    closeRouteLogModal();
     renderDetail();
   });
-  document.querySelector("#route-log-delete")?.addEventListener("click", async () => {
+
+  modal.querySelector("#route-log-delete")?.addEventListener("click", async () => {
     const existing = existingRouteLog(route.route_id);
     if (!existing || !confirm("Remove this route from your Log Book?")) return;
     const result = await deleteRouteLog(existing.log_id);
-    if (result.ok) { await loadLogbook(); renderDetail(); }
+    if (result.ok) { await loadLogbook(); closeRouteLogModal(); renderDetail(); }
   });
+}
+
+function bindRouteLogCard(route, mode) {
+  if (mode !== "routes" || !route) return;
+  document.querySelector("#route-log-open")?.addEventListener("click", () => openRouteLogModal(route));
 }
