@@ -255,6 +255,8 @@ function renderDetail() {
 }
 
 function renderRouteDetailsPanel(record) {
+  el.detailDescription.classList.remove("community-full-panel");
+  
   el.detailDescription.innerHTML = buildDetailDescription(record, "routes");
   if (el.detailRelated) el.detailRelated.innerHTML = "";
   el.detailFacts.innerHTML = detailFacts(record, "routes").map(renderFact).join("");
@@ -314,47 +316,111 @@ async function loadCommunity(routeId) {
 
 function renderCommunityPanel(route) {
   if (!route) return;
+
+  // Hide the normal Details layout while Community is active.
   if (el.detailLog) el.detailLog.innerHTML = "";
   if (el.detailRelated) el.detailRelated.innerHTML = "";
   el.detailFacts.innerHTML = "";
 
   const community = state.community || {};
-  if (String(community.routeId) !== String(route.route_id) || community.loading) {
-    el.detailDescription.innerHTML = `<div class="community-panel"><p class="muted">Loading community activity…</p></div>`;
-    if (String(community.routeId) !== String(route.route_id)) loadCommunity(route.route_id);
+
+  // Make the description container become the full Community view.
+  el.detailDescription.classList.add("community-full-panel");
+
+  if (
+    String(community.routeId) !== String(route.route_id) ||
+    community.loading
+  ) {
+    el.detailDescription.innerHTML = `
+      <div class="community-panel community-panel--full">
+        <p class="muted">Loading community activity…</p>
+      </div>
+    `;
+
+    if (String(community.routeId) !== String(route.route_id)) {
+      loadCommunity(route.route_id);
+    }
+
     return;
   }
 
   if (community.error && !community.stats) {
-    el.detailDescription.innerHTML = `<div class="community-panel"><p class="route-log-message">${escapeHtml(community.error)}</p></div>`;
+    el.detailDescription.innerHTML = `
+      <div class="community-panel community-panel--full">
+        <p class="route-log-message">${escapeHtml(community.error)}</p>
+      </div>
+    `;
     return;
   }
 
   const stats = community.stats || {};
   const comments = community.comments || [];
+
   el.detailDescription.innerHTML = `
-    <div class="community-panel">
-      <section>
+    <div class="community-panel community-panel--full">
+
+      <section class="community-send-section">
         <p class="eyebrow">Community sends</p>
+
         <div class="community-stats">
-          <div><strong>${Number(stats.total_sends || 0)}</strong><span>Total sends</span></div>
-          <div><strong>${Number(stats.onsight || 0)}</strong><span>Onsights</span></div>
-          <div><strong>${Number(stats.flash || 0)}</strong><span>Flashes</span></div>
-          <div><strong>${Number(stats.redpoint || 0)}</strong><span>Redpoints</span></div>
+          <div>
+            <strong>${Number(stats.total_sends || 0)}</strong>
+            <span>Total sends</span>
+          </div>
+
+          <div>
+            <strong>${Number(stats.onsight || 0)}</strong>
+            <span>Onsights</span>
+          </div>
+
+          <div>
+            <strong>${Number(stats.flash || 0)}</strong>
+            <span>Flashes</span>
+          </div>
+
+          <div>
+            <strong>${Number(stats.redpoint || 0)}</strong>
+            <span>Redpoints</span>
+          </div>
         </div>
       </section>
+
       <section class="community-comments">
-        <div class="community-comments-head"><p class="eyebrow">Comments</p><span class="muted">${comments.length}</span></div>
+        <div class="community-comments-head">
+          <p class="eyebrow">Comments</p>
+          <span class="muted">${comments.length}</span>
+        </div>
+
         <form id="community-comment-form" class="community-comment-form">
-          <textarea name="comment" rows="3" maxlength="2000" placeholder="Share route conditions, public beta, or a comment…" required></textarea>
-          <button class="auth-primary" type="submit">Post comment</button>
-          <p class="route-log-message" id="community-comment-message"></p>
+          <textarea
+            name="comment"
+            rows="3"
+            maxlength="2000"
+            placeholder="Share route conditions, public beta, or a comment…"
+            required
+          ></textarea>
+
+          <button class="auth-primary" type="submit">
+            Post comment
+          </button>
+
+          <p
+            class="route-log-message"
+            id="community-comment-message"
+          ></p>
         </form>
+
         <div class="community-comment-list">
-          ${comments.length ? comments.map(renderCommunityComment).join("") : `<p class="muted">No comments yet.</p>`}
+          ${
+            comments.length
+              ? comments.map(renderCommunityComment).join("")
+              : `<p class="muted">No comments yet.</p>`
+          }
         </div>
       </section>
-    </div>`;
+
+    </div>
+  `;
 
   bindCommunityComments(route);
 }

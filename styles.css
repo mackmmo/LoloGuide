@@ -773,3 +773,41 @@ label {
 .community-comment-actions button { width: auto; padding: 5px 9px; border-radius: 9px; font-size: .75rem; }
 .logbook-tabs { margin-bottom: 16px; }
 .logbook-todo-entry { grid-template-columns: 1fr auto; }
+
+/* Full-panel Community view */
+
+.community-full-panel {
+  grid-column: 1 / -1;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  padding: 0;
+  background: transparent;
+}
+
+.community-panel--full {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 6px 20px 2px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.community-send-section {
+  width: 100%;
+}
+
+.community-panel--full .community-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.community-panel--full .community-comments {
+  width: 100%;
+}
+
+.community-panel--full .community-comment-list {
+  width: 100%;
+}
