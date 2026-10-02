@@ -277,3 +277,28 @@ const getLogbook = () => apiRequest("/api/logbook/");
 const createRouteLog = (payload) => apiRequest("/api/logbook/", { method: "POST", body: JSON.stringify(payload) });
 const updateRouteLog = (logId, payload) => apiRequest(`/api/logbook/${logId}/`, { method: "PATCH", body: JSON.stringify(payload) });
 const deleteRouteLog = (logId) => apiRequest(`/api/logbook/${logId}/`, { method: "DELETE" });
+
+
+const getTodos = () => apiRequest("/api/todos/");
+const createTodo = (routeId) => apiRequest("/api/todos/", {
+  method: "POST",
+  body: JSON.stringify({ route: routeId })
+});
+const deleteTodo = (todoId) => apiRequest(`/api/todos/${todoId}/`, { method: "DELETE" });
+
+const getRouteCommunityStats = (routeId) =>
+  apiRequest(`/api/routes/${routeId}/community-stats/`);
+
+const getRouteComments = (routeId) =>
+  apiRequest(`/api/comments/?route=${encodeURIComponent(routeId)}`);
+
+const createRouteComment = (routeId, comment) => apiRequest("/api/comments/", {
+  method: "POST",
+  body: JSON.stringify({ route: routeId, comment })
+});
+const updateRouteComment = (commentId, comment) => apiRequest(`/api/comments/${commentId}/`, {
+  method: "PATCH",
+  body: JSON.stringify({ comment })
+});
+const deleteRouteComment = (commentId) =>
+  apiRequest(`/api/comments/${commentId}/`, { method: "DELETE" });

@@ -195,9 +195,7 @@ function renderDetail() {
   const current = currentDetailRecord();
 
   if (!current) {
-    if (el.detailTitle) {
-      el.detailTitle.textContent = "Choose a route";
-    }
+    if (el.detailTitle) el.detailTitle.textContent = "Choose a route";
     el.detailSubtitle.textContent = "";
     if (el.detailNav) el.detailNav.innerHTML = "";
     el.detailDescription.innerHTML = "Use the filters or click a route to inspect details without leaving the page.";
@@ -209,22 +207,209 @@ function renderDetail() {
   }
 
   const { record, mode } = current;
-  if (el.detailTitle) {
+
+  if (mode === "routes") {
+    const todo = existingTodo(record.route_id);
+    el.detailTitle.innerHTML = `
+      <span class="route-title-row">
+        <span>${escapeHtml(recordTitle(record))}</span>
+        <button id="route-todo-toggle" class="route-todo-toggle ${todo ? "is-added" : ""}" type="button"
+          aria-label="${todo ? "Remove from To-Do" : "Add to To-Do"}"
+          title="${todo ? "Remove from To-Do" : "Add to To-Do"}">${todo ? "✓" : "+"}</button>
+      </span>`;
+  } else {
     el.detailTitle.textContent = recordTitle(record);
   }
+
   el.detailSubtitle.textContent = "";
-  if (el.detailNav) {
-    el.detailNav.innerHTML = buildDetailNav(record, mode);
-    bindDetailNav();
+
+  if (mode === "routes") {
+    el.detailNav.innerHTML = `
+      <div class="route-detail-tabs" role="tablist" aria-label="Route detail">
+        <button type="button" class="route-detail-tab ${state.detailTab === "details" ? "is-active" : ""}" data-detail-tab="details">Details</button>
+        <button type="button" class="route-detail-tab ${state.detailTab === "community" ? "is-active" : ""}" data-detail-tab="community">Community</button>
+      </div>`;
+    bindRouteDetailTabs(record);
+    bindTodoToggle(record);
+
+    if (state.detailTab === "community") {
+      renderCommunityPanel(record);
+    } else {
+      renderRouteDetailsPanel(record);
+    }
+  } else {
+    if (el.detailNav) {
+      el.detailNav.innerHTML = buildDetailNav(record, mode);
+      bindDetailNav();
+    }
+    el.detailDescription.innerHTML = buildDetailDescription(record, mode);
+    if (el.detailRelated) {
+      el.detailRelated.innerHTML = buildDetailRelated(record, mode);
+      bindDetailNav();
+    }
+    el.detailFacts.innerHTML = detailFacts(record, mode).map(renderFact).join("");
+    if (el.detailLog) el.detailLog.innerHTML = "";
   }
-  el.detailDescription.innerHTML = buildDetailDescription(record, mode);
-  if (el.detailRelated) {
-    el.detailRelated.innerHTML = buildDetailRelated(record, mode);
-    bindDetailNav();
-  }
-  el.detailFacts.innerHTML = detailFacts(record, mode).map(renderFact).join("");
-  if (el.detailLog) { el.detailLog.innerHTML = mode === "routes" ? buildRouteLogCard(record) : ""; bindRouteLogCard(record, mode); }
+
   updateMap(record, mode);
+}
+
+function renderRouteDetailsPanel(record) {
+  el.detailDescription.innerHTML = buildDetailDescription(record, "routes");
+  if (el.detailRelated) el.detailRelated.innerHTML = "";
+  el.detailFacts.innerHTML = detailFacts(record, "routes").map(renderFact).join("");
+  if (el.detailLog) {
+    el.detailLog.innerHTML = buildRouteLogCard(record);
+    bindRouteLogCard(record, "routes");
+  }
+}
+
+function existingTodo(routeId) {
+  return (state.todos || []).find((item) => String(item.route) === String(routeId)) || null;
+}
+
+async function bindTodoToggle(route) {
+  document.querySelector("#route-todo-toggle")?.addEventListener("click", async () => {
+    const existing = existingTodo(route.route_id);
+    const result = existing ? await deleteTodo(existing.todo_id) : await createTodo(route.route_id);
+    if (!result.ok) {
+      alert(`Could not update To-Do: ${result.error}`);
+      return;
+    }
+    await loadTodos();
+    renderDetail();
+  });
+}
+
+function bindRouteDetailTabs(route) {
+  document.querySelectorAll("[data-detail-tab]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      state.detailTab = button.dataset.detailTab;
+      renderDetail();
+      if (state.detailTab === "community") await loadCommunity(route.route_id);
+    });
+  });
+}
+
+async function loadCommunity(routeId) {
+  state.community = { routeId, loading: true, stats: null, comments: [], error: "" };
+  renderCommunityPanel(currentDetailRecord()?.record);
+
+  const [statsResult, commentsResult] = await Promise.all([
+    getRouteCommunityStats(routeId),
+    getRouteComments(routeId)
+  ]);
+
+  if (String(currentDetailRecord()?.record?.route_id) !== String(routeId)) return;
+
+  state.community = {
+    routeId,
+    loading: false,
+    stats: statsResult.ok ? statsResult.data : null,
+    comments: commentsResult.ok && Array.isArray(commentsResult.data) ? commentsResult.data : [],
+    error: [!statsResult.ok ? statsResult.error : "", !commentsResult.ok ? commentsResult.error : ""].filter(Boolean).join(" ")
+  };
+  renderCommunityPanel(currentDetailRecord()?.record);
+}
+
+function renderCommunityPanel(route) {
+  if (!route) return;
+  if (el.detailLog) el.detailLog.innerHTML = "";
+  if (el.detailRelated) el.detailRelated.innerHTML = "";
+  el.detailFacts.innerHTML = "";
+
+  const community = state.community || {};
+  if (String(community.routeId) !== String(route.route_id) || community.loading) {
+    el.detailDescription.innerHTML = `<div class="community-panel"><p class="muted">Loading community activity…</p></div>`;
+    if (String(community.routeId) !== String(route.route_id)) loadCommunity(route.route_id);
+    return;
+  }
+
+  if (community.error && !community.stats) {
+    el.detailDescription.innerHTML = `<div class="community-panel"><p class="route-log-message">${escapeHtml(community.error)}</p></div>`;
+    return;
+  }
+
+  const stats = community.stats || {};
+  const comments = community.comments || [];
+  el.detailDescription.innerHTML = `
+    <div class="community-panel">
+      <section>
+        <p class="eyebrow">Community sends</p>
+        <div class="community-stats">
+          <div><strong>${Number(stats.total_sends || 0)}</strong><span>Total sends</span></div>
+          <div><strong>${Number(stats.onsight || 0)}</strong><span>Onsights</span></div>
+          <div><strong>${Number(stats.flash || 0)}</strong><span>Flashes</span></div>
+          <div><strong>${Number(stats.redpoint || 0)}</strong><span>Redpoints</span></div>
+        </div>
+      </section>
+      <section class="community-comments">
+        <div class="community-comments-head"><p class="eyebrow">Comments</p><span class="muted">${comments.length}</span></div>
+        <form id="community-comment-form" class="community-comment-form">
+          <textarea name="comment" rows="3" maxlength="2000" placeholder="Share route conditions, public beta, or a comment…" required></textarea>
+          <button class="auth-primary" type="submit">Post comment</button>
+          <p class="route-log-message" id="community-comment-message"></p>
+        </form>
+        <div class="community-comment-list">
+          ${comments.length ? comments.map(renderCommunityComment).join("") : `<p class="muted">No comments yet.</p>`}
+        </div>
+      </section>
+    </div>`;
+
+  bindCommunityComments(route);
+}
+
+function renderCommunityComment(comment) {
+  const mine = state.profile?.username && state.profile.username === comment.username;
+  return `
+    <article class="community-comment" data-comment-id="${comment.comment_id}">
+      <div class="community-comment-meta">
+        <strong>${escapeHtml(comment.username || "Climber")}</strong>
+        <span>${formatCommunityDate(comment.created_at)}</span>
+      </div>
+      <p>${escapeHtml(comment.comment || "")}</p>
+      ${mine ? `<div class="community-comment-actions"><button type="button" data-comment-edit="${comment.comment_id}">Edit</button><button type="button" data-comment-delete="${comment.comment_id}">Delete</button></div>` : ""}
+    </article>`;
+}
+
+function formatCommunityDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function bindCommunityComments(route) {
+  const form = document.querySelector("#community-comment-form");
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const textarea = form.elements.comment;
+    const message = document.querySelector("#community-comment-message");
+    const text = textarea.value.trim();
+    if (!text) return;
+    const result = await createRouteComment(route.route_id, text);
+    if (!result.ok) { if (message) message.textContent = String(result.error); return; }
+    textarea.value = "";
+    await loadCommunity(route.route_id);
+  });
+
+  document.querySelectorAll("[data-comment-delete]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      if (!confirm("Delete this public comment?")) return;
+      const result = await deleteRouteComment(button.dataset.commentDelete);
+      if (result.ok) await loadCommunity(route.route_id);
+    });
+  });
+
+  document.querySelectorAll("[data-comment-edit]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const item = (state.community.comments || []).find((x) => String(x.comment_id) === String(button.dataset.commentEdit));
+      if (!item) return;
+      const next = prompt("Edit comment:", item.comment || "");
+      if (next === null || !next.trim()) return;
+      const result = await updateRouteComment(item.comment_id, next.trim());
+      if (result.ok) await loadCommunity(route.route_id);
+    });
+  });
 }
 
 function buildDetailDescription(record, mode) {

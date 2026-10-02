@@ -43,6 +43,12 @@ async function loadLogbook() {
   return result;
 }
 
+async function loadTodos() {
+  const result = await getTodos();
+  if (result.ok) state.todos = Array.isArray(result.data) ? result.data : [];
+  return result;
+}
+
 async function openAccountView(view) {
   el.accountMenu.hidden = true;
   el.accountMenuButton.setAttribute("aria-expanded", "false");
@@ -58,17 +64,47 @@ async function openAccountView(view) {
   } else {
     el.accountModalTitle.textContent = "Log Book";
     el.accountModalBody.innerHTML = `<p class="muted">Loading Log Book…</p>`;
-    await loadLogbook();
+    await Promise.all([loadLogbook(), loadTodos()]);
     renderLogbookModal();
   }
 }
 
-function renderLogbookModal() {
+function renderLogbookModal(activeTab = "todo") {
   const entries = state.logbook || [];
-  if (!entries.length) { el.accountModalBody.innerHTML = `<div class="description-card empty-state">No routes logged yet. Open a route and use Log Route to add a project or send.</div>`; return; }
-  const projects=entries.filter(x=>x.status!=="sent"), sends=entries.filter(x=>x.status==="sent");
-  const cards=(items)=>items.length?items.map(x=>`<article class="logbook-entry"><div><strong>${escapeHtml(x.route_name||`Route ${x.route}`)}</strong><span>${escapeHtml(x.grade||"")} · ${Number(x.attempts||0)} attempt${Number(x.attempts||0)===1?"":"s"}</span></div><span class="logbook-status">${escapeHtml(x.status==="sent"?(x.send_style||"sent"):"project")}</span>${x.date_sent?`<small>${escapeHtml(x.date_sent)}</small>`:""}${x.beta?`<p><strong>Beta</strong> ${escapeHtml(x.beta)}</p>`:""}</article>`).join(""):`<p class="muted">None yet.</p>`;
-  el.accountModalBody.innerHTML=`<section class="logbook-section"><h3>Projects</h3>${cards(projects)}</section><section class="logbook-section"><h3>Sends</h3>${cards(sends)}</section><p class="muted logbook-hint">To edit an entry, open that route in the guide and update Your Log.</p>`;
+  const todos = state.todos || [];
+  const projects = entries.filter((x) => x.status !== "sent");
+  const sends = entries.filter((x) => x.status === "sent");
+
+  const logCards = (items) => items.length ? items.map((x) => `
+    <article class="logbook-entry">
+      <div><strong>${escapeHtml(x.route_name || `Route ${x.route}`)}</strong><span>${escapeHtml(x.grade || "")} · ${Number(x.attempts || 0)} attempt${Number(x.attempts || 0) === 1 ? "" : "s"}</span></div>
+      <span class="logbook-status">${escapeHtml(x.status === "sent" ? (x.send_style || "sent") : "project")}</span>
+      ${x.date_sent ? `<small>${escapeHtml(x.date_sent)}</small>` : ""}
+      ${x.beta ? `<p><strong>Beta</strong> ${escapeHtml(x.beta)}</p>` : ""}
+    </article>`).join("") : `<p class="muted">None yet.</p>`;
+
+  const todoCards = todos.length ? todos.map((x) => `
+    <article class="logbook-entry logbook-todo-entry">
+      <div><strong>${escapeHtml(x.route_name || `Route ${x.route}`)}</strong><span>${escapeHtml(x.grade || "")}</span></div>
+      <span class="logbook-status">To-Do</span>
+    </article>`).join("") : `<p class="muted">No routes in your To-Do list yet. Use the + beside a route name to add one.</p>`;
+
+  const content = activeTab === "projects" ? logCards(projects)
+    : activeTab === "sends" ? logCards(sends)
+    : todoCards;
+
+  el.accountModalBody.innerHTML = `
+    <div class="logbook-tabs" role="tablist" aria-label="Log Book">
+      <button type="button" class="logbook-tab ${activeTab === "todo" ? "is-active" : ""}" data-logbook-tab="todo">To-Do <span>${todos.length}</span></button>
+      <button type="button" class="logbook-tab ${activeTab === "projects" ? "is-active" : ""}" data-logbook-tab="projects">Projects <span>${projects.length}</span></button>
+      <button type="button" class="logbook-tab ${activeTab === "sends" ? "is-active" : ""}" data-logbook-tab="sends">Sends <span>${sends.length}</span></button>
+    </div>
+    <section class="logbook-section">${content}</section>
+    <p class="muted logbook-hint">Open a route in the guide to edit its log or To-Do status.</p>`;
+
+  el.accountModalBody.querySelectorAll("[data-logbook-tab]").forEach((button) => {
+    button.addEventListener("click", () => renderLogbookModal(button.dataset.logbookTab));
+  });
 }
 
 function showGuide() {
@@ -87,6 +123,8 @@ function showGuide() {
   }
   loadAllData();
   loadLogbook();
+  loadTodos();
+  getProfile().then((result) => { if (result.ok) state.profile = result.data; });
 }
 
 function bindAuthEvents() {

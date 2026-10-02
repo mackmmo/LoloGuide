@@ -724,3 +724,52 @@ label {
   margin: 0;
   line-height: 1.45;
 }
+
+
+/* Route To-Do + Community */
+.route-title-row { display: inline-flex; align-items: center; gap: 9px; max-width: 100%; }
+.route-title-row > span { min-width: 0; }
+.route-todo-toggle {
+  width: 28px; height: 28px; min-width: 28px; padding: 0; border-radius: 50%;
+  display: inline-grid; place-items: center; font-size: 1.15rem; line-height: 1;
+  border-color: rgba(15,141,97,.35); color: var(--accent); background: rgba(255,255,255,.82);
+}
+.route-todo-toggle.is-added { color: white; background: var(--accent); border-color: var(--accent); }
+
+.route-detail-tabs, .logbook-tabs {
+  display: flex; gap: 6px; padding: 4px; border-radius: 14px; background: rgba(22,40,31,.06);
+}
+.route-detail-tab, .logbook-tab {
+  width: auto; flex: 1; padding: 8px 12px; border: 0; border-radius: 11px;
+  background: transparent; color: var(--muted); font-size: .78rem; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase;
+}
+.route-detail-tab.is-active, .logbook-tab.is-active {
+  background: var(--panel-strong); color: var(--ink); box-shadow: 0 2px 8px rgba(22,40,31,.08);
+}
+.logbook-tab span { margin-left: 4px; color: var(--muted); font-weight: 500; }
+
+.community-panel { display: grid; gap: 22px; }
+.community-stats { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+.community-stats > div { display: grid; gap: 2px; padding: 12px; border-radius: 14px; background: rgba(255,255,255,.72); }
+.community-stats strong { font-size: 1.35rem; color: var(--accent); }
+.community-stats span { font-size: .76rem; color: var(--muted); }
+
+.community-comments { display: grid; gap: 12px; }
+.community-comments-head { display: flex; justify-content: space-between; align-items: center; }
+.community-comments-head .eyebrow { margin: 0; }
+.community-comment-form { display: grid; gap: 8px; }
+.community-comment-form textarea {
+  width: 100%; resize: vertical; padding: 11px 12px; border: 1px solid var(--line);
+  border-radius: 14px; background: var(--panel-strong); color: var(--ink); font: inherit;
+}
+.community-comment-form .auth-primary { width: auto; justify-self: end; padding: 9px 14px; }
+.community-comment-list { display: grid; gap: 9px; }
+.community-comment { padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,.7); }
+.community-comment p { margin: 7px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.community-comment-meta { display: flex; justify-content: space-between; gap: 10px; font-size: .8rem; }
+.community-comment-meta span { color: var(--muted); }
+.community-comment-actions { display: flex; gap: 6px; margin-top: 8px; }
+.community-comment-actions button { width: auto; padding: 5px 9px; border-radius: 9px; font-size: .75rem; }
+.logbook-tabs { margin-bottom: 16px; }
+.logbook-todo-entry { grid-template-columns: 1fr auto; }

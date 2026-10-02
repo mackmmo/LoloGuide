@@ -35,5 +35,14 @@ const state = {
   },
   filtersCollapsed: false,
   profile: null,
-  logbook: []
+  logbook: [],
+  todos: [],
+  detailTab: "details",
+  community: {
+    routeId: null,
+    loading: false,
+    stats: null,
+    comments: [],
+    error: ""
+  }
 };
