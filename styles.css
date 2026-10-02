@@ -632,3 +632,24 @@ label {
 .route-log-modal-close { width: 40px; height: 40px; flex: 0 0 40px; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.75); font: inherit; font-size: 1.5rem; cursor: pointer; }
 .route-log-current { margin: 0 0 16px; padding: 10px 12px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); font-weight: 700; }
 @media (max-width: 560px) { .route-log-overview { align-items: stretch; flex-direction: column; } .route-log-open { width: 100%; } .route-log-modal { padding: 10px; } .route-log-modal-card { padding: 18px; border-radius: 20px; } }
+
+/* Keep the route-log callout readable in the narrow detail column. */
+.route-log-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 12px;
+}
+.route-log-overview-copy {
+  width: 100%;
+}
+.route-log-overview-copy strong,
+.route-log-overview-copy span {
+  display: block;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.route-log-open {
+  width: 100%;
+  min-width: 0;
+}
