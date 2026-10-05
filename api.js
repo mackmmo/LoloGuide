@@ -286,8 +286,8 @@ const createTodo = (routeId) => apiRequest("/api/todos/", {
 });
 const deleteTodo = (todoId) => apiRequest(`/api/todos/${todoId}/`, { method: "DELETE" });
 
-const getRouteCommunityStats = (routeId) =>
-  apiRequest(`/api/routes/${routeId}/community-stats/`);
+const getCommunityFeed = () =>
+  apiRequest(`/api/community-feed/`);
 
 const getRouteComments = (routeId) =>
   apiRequest(`/api/comments/?route=${encodeURIComponent(routeId)}`);

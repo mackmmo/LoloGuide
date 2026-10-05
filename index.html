@@ -23,7 +23,7 @@
       href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=70" />
+    <link rel="stylesheet" href="./styles.css?v=73" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-BYGF2CWJ49"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -90,20 +90,42 @@
     </section>
 
     <main id="app-shell" class="app-shell app-shell--map-first" hidden>
-      <aside class="sidebar-column">
-        <section class="panel controls-panel">
-          <div class="brand-lockup">
-            <p class="app-title">A Rock Climber's Guide to Lolo Pass Web App</p>
-            <div class="account-menu-wrap">
-              <button id="account-menu-button" class="account-menu-button" type="button" aria-label="Account menu" aria-expanded="false">☰</button>
-              <div id="account-menu" class="account-menu" hidden>
-                <button type="button" data-account-view="profile">Profile</button>
-                <button type="button" data-account-view="logbook">Log Book</button>
-                <button id="logout-button" type="button">Log out</button>
-              </div>
+
+      <header id="app-header" class="app-header">
+        <p class="app-title">A Rock Climber's Guide to Lolo Pass Web App</p>
+          <div class="account-menu-wrap">
+            <button 
+            id="account-menu-button" 
+            class="account-menu-button" 
+            type="button" aria-label="Account menu" 
+            aria-expanded="false"
+            >☰</button>
+
+            <div id="account-menu" class="account-menu" hidden>
+              <button type="button" data-account-view="profile">Profile</button>
+              <button id="community-feed-button">Community Feed</button>
+              <button type="button" data-account-view="logbook">Log Book</button>
+              <button id="logout-button" type="button">Log out</button>
             </div>
           </div>
-
+      </header>
+            
+      <section id="community-feed-page" hidden>
+        <h1>Community Feed</h1>
+        <div class="community-table-header">
+          <span>Climber</span>
+          <span>Route</span>
+          <span>Grade</span>
+          <span>Style</span>
+          <span>Date</span>
+        </div>
+        <div id="community-feed"></div>
+        
+        </div>
+      </section>
+      
+      <aside class="panel filters-panel">
+        <section class="panel controls-panel">
           <div id="filters-panel-body" class="filters-panel-body">
             <div class="filter-grid">
               <label class="full-span">
@@ -165,7 +187,6 @@
             <p id="detail-subtitle" class="detail-summary muted">Area and subarea details will appear here when filters are applied.</p>
           </div>
         </div>
-
         <div id="detail-nav" class="detail-nav"></div>
         <div id="detail-description" class="description-card empty-state">
           Use the filters or click a route to inspect details without leaving the page.
@@ -188,7 +209,12 @@
           <div id="map"></div>
         </section>
       </section>
+
+
+
     </main>
+
+
 
     <div id="account-modal" class="account-modal" hidden>
       <div class="account-modal-card" role="dialog" aria-modal="true" aria-labelledby="account-modal-title">
@@ -201,10 +227,11 @@
     <script src="./state.js?v=68"></script>
     <script src="./dom.js?v=68"></script>
     <script src="./utils/utils.js?v=68"></script>
-    <script src="./api.js?v=68"></script>
+    <script src="./api.js?v=69"></script>
     <script src="./events.js?v=68"></script>
     <script src="./map.js?v=68"></script>
     <script src="./render.js?v=70"></script>
     <script src="./app.js?v=68"></script>
+    <script src="./community.js?v=71"></script>
   </body>
 </html>

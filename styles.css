@@ -52,6 +52,28 @@ body::before {
   overflow: hidden;
 }
 
+.community-table-header,
+.community-ascent-row {
+    display: grid;
+    grid-template-columns: 1.2fr 2fr 0.7fr 1fr 1fr;
+    gap: 12px;
+    align-items: center;
+}
+
+.community-table-header {
+    border-bottom: 2px solid #888;
+    font-weight: bold;
+}
+
+.app-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 8px;
+}
+
 .sidebar-column,
 .map-column,
 .controls-panel,
@@ -97,8 +119,8 @@ body::before {
 
 .app-title {
   margin: 0;
-  max-width: 280px;
-  text-align: center;
+  max-width: none;
+  text-align: left;
   font-size: 1.05rem;
   line-height: 1.25;
   font-weight: 700;
@@ -515,7 +537,7 @@ label {
 
   .app-title {
     max-width: none;
-    font-size: 1rem;
+    text-align: left;
   }
 
   .results-panel {
@@ -584,7 +606,7 @@ label {
 
 /* Account menu, route logging, and log book */
 .brand-lockup { position: relative; padding-right: 54px; }
-.account-menu-wrap { position: absolute; right: 0; top: 50%; transform: translateY(-50%); z-index: 20; }
+.account-menu-wrap {position: relative; z-index: 20;}
 .account-menu-button { width: 42px; height: 42px; padding: 0; border-radius: 12px; font-size: 1.25rem; line-height: 1; background: rgba(255,255,255,.78); }
 .account-menu { position: absolute; right: 0; top: calc(100% + 8px); width: 170px; padding: 7px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel-strong); box-shadow: var(--shadow); }
 .account-menu button { width: 100%; padding: 9px 10px; border: 0; border-radius: 9px; text-align: left; background: transparent; }
