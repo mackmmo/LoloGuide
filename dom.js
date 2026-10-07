@@ -1,4 +1,13 @@
 const el = {
+  communityFeedButton: document.querySelector("#community-feed-button"),
+  communityFeed: document.querySelector("#community-feed"),
+  guideViewButton: document.querySelector("#guide-view"),
+  mapViewButton: document.querySelector("#map-view"),
+  communityFeedPage: document.querySelector("#community-feed-page"),
+  appHeader: document.querySelector("#app-header"),
+  mapColumn: document.querySelector(".map-column"),
+  detailPanel: document.querySelector(".detail-panel"),
+  filtersPanel: document.querySelector(".filters-panel"),
   authScreen: document.querySelector("#auth-screen"),
   appShell: document.querySelector("#app-shell"),
   loginTab: document.querySelector("#login-tab"),

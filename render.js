@@ -7,6 +7,15 @@ function render() {
   renderDetail();
 }
 
+function showMobileGuidePanel(panel) {
+  if (window.innerWidth > 760) return;
+
+  el.appShell.classList.toggle(
+    "mobile-guide-detail",
+    panel === "detail"
+  );
+}
+
 function renderStatus() {
   if (!el.statusBanner) {
     return;
@@ -134,6 +143,7 @@ function renderList() {
   document.querySelectorAll(".record-card").forEach((button, index) => {
     button.addEventListener("click", () => {
       state.selected = records[index];
+      showMobileGuidePanel("detail");
       trackEvent("route_select", {
         route_id: String(records[index].route_id || ""),
         route_name: records[index].name || "",
@@ -148,11 +158,11 @@ function renderList() {
 
 function renderRecordCard(record) {
   const active = state.selected && recordKey(state.selected) === recordKey(record) ? "active" : "";
+
   return `
     <button class="record-card ${active}" data-id="${recordKey(record)}">
       <strong>${escapeHtml(recordTitle(record))}</strong>
-      <small>${escapeHtml(recordMeta(record, "routes"))}</small>
-      <p>${escapeHtml(recordSnippet(record))}</p>
+      <span>${escapeHtml(record.grade || "")}</span>
     </button>
   `;
 }
@@ -211,18 +221,35 @@ function renderDetail() {
 
   const { record, mode } = current;
 
-  if (mode === "routes") {
-    const todo = existingTodo(record.route_id);
-    el.detailTitle.innerHTML = `
-      <span class="route-title-row">
-        <span>${escapeHtml(recordTitle(record))}</span>
-        <button id="route-todo-toggle" class="route-todo-toggle ${todo ? "is-added" : ""}" type="button"
-          aria-label="${todo ? "Remove from To-Do" : "Add to To-Do"}"
-          title="${todo ? "Remove from To-Do" : "Add to To-Do"}">${todo ? "✓" : "+"}</button>
-      </span>`;
-  } else {
-    el.detailTitle.textContent = recordTitle(record);
-  }
+if (mode === "routes") {
+  const todo = existingTodo(record.route_id);
+
+  el.detailTitle.innerHTML = `
+    <button class="mobile-back-to-routes" type="button">
+      ← Routes
+    </button>
+
+    <span class="route-title-row">
+      <span>${escapeHtml(recordTitle(record))}</span>
+
+      <button
+        id="route-todo-toggle"
+        class="route-todo-toggle ${todo ? "is-added" : ""}"
+        type="button"
+        aria-label="${todo ? "Remove from To-Do" : "Add to To-Do"}"
+        title="${todo ? "Remove from To-Do" : "Add to To-Do"}"
+      >${todo ? "✓" : "+"}</button>
+    </span>`;
+} else {
+  el.detailTitle.textContent = recordTitle(record);
+}
+
+document.querySelector(".mobile-back-to-routes")
+  ?.addEventListener("click", () => {
+    showMobileGuidePanel("browse");
+  });
+
+el.detailSubtitle.textContent = "";
 
   el.detailSubtitle.textContent = "";
 

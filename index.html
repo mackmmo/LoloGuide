@@ -23,7 +23,7 @@
       href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=73" />
+    <link rel="stylesheet" href="./styles.css?v=88" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-BYGF2CWJ49"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -89,7 +89,7 @@
       </div>
     </section>
 
-    <main id="app-shell" class="app-shell app-shell--map-first" hidden>
+    <main id="app-shell" class="app-shell" hidden>
 
       <header id="app-header" class="app-header">
         <p class="app-title">A Rock Climber's Guide to Lolo Pass Web App</p>
@@ -103,9 +103,12 @@
 
             <div id="account-menu" class="account-menu" hidden>
               <button type="button" data-account-view="profile">Profile</button>
+              <button id="guide-view">Guide</button>
+              <button id="map-view">Map</button>
               <button id="community-feed-button">Community Feed</button>
               <button type="button" data-account-view="logbook">Log Book</button>
               <button id="logout-button" type="button">Log out</button>
+              
             </div>
           </div>
       </header>
@@ -120,8 +123,6 @@
           <span>Date</span>
         </div>
         <div id="community-feed"></div>
-        
-        </div>
       </section>
       
       <aside class="panel filters-panel">
@@ -197,17 +198,7 @@
       </section>
 
       <section class="map-column">
-        <section class="panel map-panel">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Map</p>
-              <h2>Lolo Map</h2>
-              <p class="muted">Click the areas for an overview popup.</p>
-            </div>
-          </div>
-
           <div id="map"></div>
-        </section>
       </section>
 
 
@@ -224,14 +215,15 @@
     </div>
 
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-    <script src="./state.js?v=68"></script>
-    <script src="./dom.js?v=68"></script>
+    <script src="./dom.js?v=70"></script>
+    <script src="./view.js?v=4"></script>
+    <script src="./state.js?v=69"></script>
     <script src="./utils/utils.js?v=68"></script>
     <script src="./api.js?v=69"></script>
     <script src="./events.js?v=68"></script>
     <script src="./map.js?v=68"></script>
-    <script src="./render.js?v=70"></script>
-    <script src="./app.js?v=68"></script>
-    <script src="./community.js?v=71"></script>
+    <script src="./render.js?v=72"></script>
+    <script src="./app.js?v=73"></script>
+    <script src="./community.js?v=73"></script>
   </body>
 </html>

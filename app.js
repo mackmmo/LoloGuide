@@ -108,6 +108,8 @@ function renderLogbookModal(activeTab = "todo") {
 }
 
 function showGuide() {
+  showView("guide");
+  
   el.authScreen.hidden = true;
   el.appShell.hidden = false;
 
@@ -125,6 +127,7 @@ function showGuide() {
   loadLogbook();
   loadTodos();
   getProfile().then((result) => { if (result.ok) state.profile = result.data; });
+  
 }
 
 function bindAuthEvents() {

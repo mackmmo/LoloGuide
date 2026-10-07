@@ -1,18 +1,5 @@
-const communityFeed = document.querySelector("#community-feed-page");
-const appShell = document.querySelector("#app-shell");
-const communityFeedButton = document.querySelector("#community-feed-button");
-const mapColumn = document.querySelector(".map-column");
-const detailPanel = document.querySelector(".detail-panel");
-const filtersPanel = document.querySelector(".filters-panel");
-const appHeader = document.querySelector("#app-header");
-const communityFeedElement = document.querySelector("#community-feed");
-
-communityFeedButton.addEventListener("click", async () => {
-    communityFeed.hidden = false;
-    appHeader.hidden = false;
-    mapColumn.hidden = true;
-    detailPanel.hidden = true;
-    filtersPanel.hidden = true; 
+el.communityFeedButton.addEventListener("click", async () => {
+    showView("community");
 
     const result = await getCommunityFeed();
 
@@ -21,9 +8,9 @@ communityFeedButton.addEventListener("click", async () => {
                     <span class="ascent-name"> ${ ascent.username }</span>
                     <span class="ascent-route"> ${ ascent.route_name }</span>
                     <span class="ascent-grade">${ ascent.grade }</span> 
-                    <span class="ascent-style">${ ascent.style }</span>
-                    <span class="ascent-date">${ ascent.sent_date }</span>
+                    <span class="ascent-style">${ ascent.send_style }</span>
+                    <span class="ascent-date">${ ascent.date_sent }</span>
                 </div>`;
 });
-communityFeedElement.innerHTML = communityUpdates.join("");
+    el.communityFeed.innerHTML = communityUpdates.join("");
 });
