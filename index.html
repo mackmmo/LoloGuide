@@ -23,7 +23,7 @@
       href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=88" />
+    <link rel="stylesheet" href="./styles.css?v=87" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-BYGF2CWJ49"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -92,7 +92,7 @@
     <main id="app-shell" class="app-shell" hidden>
 
       <header id="app-header" class="app-header">
-        <p class="app-title">A Rock Climber's Guide to Lolo Pass Web App</p>
+        <p class="app-title">Lolo Guide</p>
           <div class="account-menu-wrap">
             <button 
             id="account-menu-button" 
@@ -105,7 +105,7 @@
               <button type="button" data-account-view="profile">Profile</button>
               <button id="guide-view">Guide</button>
               <button id="map-view">Map</button>
-              <button id="community-feed-button">Community Feed</button>
+              <button id="community-feed-button">Feed</button>
               <button type="button" data-account-view="logbook">Log Book</button>
               <button id="logout-button" type="button">Log out</button>
               
@@ -114,7 +114,19 @@
       </header>
             
       <section id="community-feed-page" hidden>
-        <h1>Community Feed</h1>
+        <div class="community-feed-heading">
+          <h1>Feed</h1>
+          <label class="community-date-filter" for="community-date-filter">
+            <span>Date range</span>
+            <select id="community-date-filter">
+              <option value="mtd" selected>Month to Date</option>
+              <option value="7d">Last 7 Days</option>
+              <option value="30d">Last 30 Days</option>
+              <option value="ytd">Year to Date</option>
+              <option value="all">All Time</option>
+            </select>
+          </label>
+        </div>
         <div class="community-table-header">
           <span>Climber</span>
           <span>Route</span>
@@ -198,7 +210,7 @@
       </section>
 
       <section class="map-column">
-          <div id="map"></div>
+        <div id="map"></div>
       </section>
 
 
@@ -219,11 +231,11 @@
     <script src="./view.js?v=4"></script>
     <script src="./state.js?v=69"></script>
     <script src="./utils/utils.js?v=68"></script>
-    <script src="./api.js?v=69"></script>
+    <script src="./api.js?v=71"></script>
     <script src="./events.js?v=68"></script>
     <script src="./map.js?v=68"></script>
     <script src="./render.js?v=72"></script>
     <script src="./app.js?v=73"></script>
-    <script src="./community.js?v=73"></script>
+    <script src="./community.js?v=91"></script>
   </body>
 </html>
