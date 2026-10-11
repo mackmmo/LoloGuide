@@ -364,3 +364,5 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .send-history { margin-top:1rem; display:grid; gap:.5rem; }
 .send-history-row { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; }
 @media(max-width:600px) { .community-tabs button { flex:1 1 auto; font-size:.85rem; } .leaderboard-table th,.leaderboard-table td { padding:.6rem .3rem; font-size:.85rem; } }
+
+#community-refresh { display:block; margin:0 0 1rem auto; }

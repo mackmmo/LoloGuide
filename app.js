@@ -103,7 +103,7 @@ function renderLogbookModal(activeTab = "todo") {
 
   const logCards = (items) => items.length ? items.map((x) => `
     <article class="logbook-entry">
-      <div><button type="button" class="logbook-route-link" data-logbook-route="${escapeHtml(String(x.route))}">${escapeHtml(x.route_name || `Route ${x.route}`)}</button><span>${escapeHtml(x.grade || "")} · ${x.attempts != null ? `${Number(x.attempts)} attempt${Number(x.attempts) === 1 ? "" : "s"}` : "dated send"}</span></div>
+      <div><button type="button" class="logbook-route-link" data-logbook-route="${escapeHtml(String(x.route))}">${escapeHtml(x.route_name || `Route ${x.route}`)}</button><span>${escapeHtml(x.grade || "")}${Number(x.attempts) > 0 ? ` · ${Number(x.attempts)} attempt${Number(x.attempts) === 1 ? "" : "s"}` : ""}</span></div>
       <span class="logbook-status">${escapeHtml(x.status === "sent" ? (x.send_style || "sent") : "project")}</span>
       ${x.date_sent ? `<small>${escapeHtml(x.date_sent)}</small>` : ""}
       ${x.beta ? `<p><strong>Beta</strong> ${escapeHtml(x.beta)}</p>` : ""}

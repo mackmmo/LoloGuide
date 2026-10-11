@@ -745,7 +745,7 @@ function openRouteLogModal(route, repeatSend = false, annualSend = null) {
       <form id="route-log-form" class="route-log-form">
         <label><span>Status</span><select name="status" ${repeatSend || annualSend ? "disabled" : ""}><option value="project" ${!sent ? "selected" : ""}>Project</option><option value="sent" ${sent ? "selected" : ""}>Sent</option></select></label>
         <label class="route-log-send-field"><span>Send style</span><select name="send_style"><option value="">—</option>${["onsight","flash","redpoint","pinkpoint"].map(v => `<option value="${v}" ${log?.send_style === v ? "selected" : ""}>${v[0].toUpperCase()+v.slice(1)}</option>`).join("")}</select></label>
-        <label ${repeatSend || annualSend ? "hidden" : ""}><span>Attempts</span><input name="attempts" type="number" min="0" value="${Number(log?.attempts || 0)}" /></label>
+        <label ${repeatSend || annualSend ? "hidden" : ""}><span>Attempts</span><input name="attempts" type="number" min="0" value="${Number(log?.attempts) > 0 ? Number(log.attempts) : ""}" placeholder="Optional" /></label>
         <label class="route-log-date-field"><span>Date sent</span><input name="date_sent" type="date" value="${escapeHtml(log?.date_sent || "")}" ${repeatSend || annualSend ? "required" : ""} /></label>
         <p class="muted">Date sent is required for leaderboard points. JuntMasters counts a route once in its Date sent year, including backlogged sends. Enable leaderboard publication in Profile to participate.</p>
         <label class="route-log-beta" ${repeatSend || annualSend ? "hidden" : ""}><span>Private beta</span><textarea name="beta" rows="4" placeholder="Your private beta…">${escapeHtml(log?.beta || "")}</textarea></label>

@@ -124,3 +124,14 @@ document.querySelector("#community-feed")?.addEventListener("click", async event
     button.disabled = false;
   }
 });
+
+const communityRefreshButton = document.querySelector("#community-refresh");
+communityRefreshButton.addEventListener("click", async () => {
+  communityRefreshButton.disabled = true;
+  communityRefreshButton.textContent = "Refreshing…";
+  try { await refreshCommunityView(); }
+  finally {
+    communityRefreshButton.disabled = false;
+    communityRefreshButton.textContent = "↻ Refresh";
+  }
+});
