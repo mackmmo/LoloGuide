@@ -11,6 +11,11 @@ function saveAuthTokens(access, refresh = state.auth.refreshToken) {
 
 function clearAuthTokens() {
   saveAuthTokens("", "");
+  state.profile = null;
+  state.logbook = [];
+  state.competitionSends = [];
+  state.todos = [];
+  el.accountModal.hidden = true;
 }
 
 async function loginUser(username, password) {
@@ -311,3 +316,10 @@ const deleteRouteComment = (commentId) =>
   apiRequest(`/api/comments/${commentId}/`, {
     method: "DELETE"
   });
+const updateDataPermissions = payload => apiRequest("/api/profile/", {method: "PATCH", body: JSON.stringify(payload)});
+const getCompetitionSends = () => apiRequest("/api/competition-sends/");
+const createCompetitionSend = payload => apiRequest("/api/competition-sends/", {method: "POST", body: JSON.stringify(payload)});
+const updateCompetitionSend = (id, payload) => apiRequest(`/api/competition-sends/${id}/`, {method: "PATCH", body: JSON.stringify(payload)});
+const deleteCompetitionSend = id => apiRequest(`/api/competition-sends/${id}/`, {method: "DELETE"});
+const getLeaderboard = (board, year) => apiRequest(`/api/leaderboards/?board=${encodeURIComponent(board)}&year=${encodeURIComponent(year)}`);
+const getHallOfFame = () => apiRequest("/api/hall-of-fame/");

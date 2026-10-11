@@ -1,30 +1,55 @@
+const MAPTILER_KEY = "izwnMfYAP1x5LDeYc4zb";
+const MAP_STYLES = { custom: "https://api.maptiler.com/maps/019eb30f-c1f6-7d3b-b3b9-d2c198fb5d44/style.json?key=izwnMfYAP1x5LDeYc4zb", topo: "https://api.maptiler.com/maps/topo-v2/style.json?key=" + MAPTILER_KEY, satellite: "https://api.maptiler.com/maps/hybrid/style.json?key=" + MAPTILER_KEY };
+let mapBasemap = "custom";
+let mapDimension = "2d";
+let mapStyleReady = false;
+let mapOpenWidget = "";
+let mapSearchVersion = 0;
+let mapSearchMatches = [];
+let mapSearchTimer = null;
+
+let highlightedAreaId = "";
+const floatingAreaPins = new Map();
+let floatingAreaPopup = null;
+
 function initMap() {
   map = new maplibregl.Map({
     container: "map",
-    style: "https://api.maptiler.com/maps/019eb30f-c1f6-7d3b-b3b9-d2c198fb5d44/style.json?key=izwnMfYAP1x5LDeYc4zb",
+    style: MAP_STYLES[mapBasemap],
+    maxPitch: 75,
     center: [-114.56835793693313, 46.69852662439601],
     zoom: 11
   });
 
   map.addControl(new maplibregl.NavigationControl(), "top-left");
 
-  map.on("load", () => {
-    console.log("Map loaded");
-    renderOverlayLayers();
+  map.on("style.load", () => {
+    mapStyleReady = true;
+    // Enable terrain before adding the layers that must be draped over it.
+    applyMapDimension();
+    renderOverlayLayers(true);
+    bringGuideLayersToFront();
+    renderFloatingAreaPins();
+    setMapControlStatus("");
   });
+  bindMapDisplayControls();
+  bindMapCameraControls();
+  bindMapTools();
+  map.on("move", syncMapCameraControls);
 
   map.on("error", (event) => {
     console.error("MapLibre error", event);
+    setMapControlStatus("Map imagery or terrain could not load. Try another view.");
   });
 }
 
-function renderOverlayLayers() {
+function renderOverlayLayers(styleReady = false) {
   if (!map) {
     console.log("No map yet");
     return;
   }
 
-  if (!map.isStyleLoaded()) {
+  if (!styleReady && !mapStyleReady) {
     console.log("Map style not loaded yet");
     return;
   }
@@ -95,6 +120,8 @@ function renderOverlayLayers() {
       });
       console.log("Areas outline layer added");
     }
+
+renderSelectedAreaHighlight(styleReady);
 
 if (!map.getLayer("area-labels")) {
   map.addLayer({
@@ -337,6 +364,7 @@ if (!map.__areasPopupBound && map.getLayer("areas-hit")) {
 
     const props = feature.properties || {};
     const areaId = String(props.area_id || "");
+    highlightArea(areaId);
     const area = state.datasets.areas.find((item) => String(item.area_id) === areaId);
 
     const popupArea = {
@@ -350,7 +378,8 @@ if (!map.__areasPopupBound && map.getLayer("areas-hit")) {
       area_name: popupArea.name || ""
     });
 
-    const popup = new maplibregl.Popup({
+    floatingAreaPopup?.remove();
+    const popup = floatingAreaPopup = new maplibregl.Popup({
       closeButton: true,
       closeOnClick: true,
       maxWidth: "320px"
@@ -387,7 +416,13 @@ if (!map.__areaLabelsClickBound && map.getLayer("area-labels")) {
       area_name: area.name || ""
     });
 
-    await focusAreaFromMap(areaId);
+    floatingAreaPopup?.remove();
+    floatingAreaPopup = new maplibregl.Popup({ closeButton: true, closeOnClick: true, maxWidth: "320px" })
+      .setLngLat(event.lngLat)
+      .setHTML(buildAreaPopupHtml(area))
+      .addTo(map);
+    highlightArea(areaId);
+    bindAreaPopupActions(floatingAreaPopup, areaId);
   });
 
   map.__areaLabelsClickBound = true;
@@ -395,6 +430,8 @@ if (!map.__areaLabelsClickBound && map.getLayer("area-labels")) {
   } catch (error) {
     console.error("renderOverlayLayers error", error);
   }
+  renderFloatingAreaPins();
+  syncMapTools();
 }
 
 function buildAreaTypeSummary(areaId) {
@@ -426,7 +463,7 @@ function buildAreaPopupHtml(area) {
       </div>
       ${typeSummary ? `<p class="map-popup-summary">${escapeHtml(typeSummary)}</p>` : ""}
       <button class="map-popup-action" type="button" data-area-id="${escapeHtml(String(area.area_id || ""))}">
-        View Area
+        See Area
       </button>
     </div>
   `;
@@ -494,6 +531,8 @@ async function focusAreaFromMap(areaOrId) {
   state.contextMode = "areas";
   state.selected = null;
 
+  showView("guide");
+  showMobileGuidePanel("detail");
   renderFilters();
   await loadRoutesFromBackend();
 }
@@ -507,13 +546,16 @@ function fitMapToOverview() {
   map.fitBounds(bounds, { padding: 70, maxZoom: 11.5, duration: 700 });
 }
 
-function updateMap(record, mode = "routes") {
-  if (!map || !record) return;
+function updateMap(record, mode = "routes", zoom = null) {
+  if (!map) return;
+  const area = record ? detailMapArea(record, mode) : null;
+  highlightArea(area?.area_id ?? "");
+  if (!record) return;
   const point = parsePoint(record.centroid);
   if (!point) return;
   const [lat, lon] = point;
   const zoomByMode = { routes: 16, subareas: 14.5, areas: 13, sectors: 11.5 };
-  map.easeTo({ center: [lon, lat], zoom: zoomByMode[mode] || 13, duration: 750, essential: true });
+  map.easeTo({ center: [lon, lat], zoom: zoom ?? (zoomByMode[mode] || 13), duration: 750, essential: true });
 }
 
 function parsePoint(value) {
@@ -596,3 +638,283 @@ function areaColor(index) {
   return colors[index % colors.length];
 }
 
+
+function highlightArea(areaId) {
+  highlightedAreaId = String(areaId ?? "");
+  renderSelectedAreaHighlight();
+  renderFloatingAreaPins();
+  syncMapTools();
+}
+
+function renderSelectedAreaHighlight(styleReady = false) {
+  if (!map || (!styleReady && !mapStyleReady) || !map.getSource("areas")) return;
+  const filter = ["==", ["to-string", ["get", "area_id"]], highlightedAreaId];
+  const layers = [
+    { id: "selected-area-outline", type: "line", paint: { "line-color": "#ffca28", "line-width": 3, "line-opacity": 1 } }
+  ];
+  layers.forEach(layer => {
+    if (!map.getLayer(layer.id)) {
+      map.addLayer({ ...layer, source: "areas", "source-layer": "areas", filter }, map.getLayer("area-labels") ? "area-labels" : undefined);
+    } else {
+      map.setFilter(layer.id, filter);
+    }
+  });
+}
+
+function setMapControlStatus(message) {
+  const status = document.querySelector("#map-display-status");
+  if (status) { status.textContent = message; status.hidden = !message; }
+}
+
+function applyMapDimension(styleReady = false) {
+  syncMapCameraControls();
+  if (!map || (!styleReady && !mapStyleReady)) return;
+  if (mapDimension === "3d") {
+    if (!map.getSource("guide-terrain")) {
+      map.addSource("guide-terrain", {
+        type: "raster-dem",
+        url: "https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=" + MAPTILER_KEY,
+        tileSize: 256,
+        encoding: "mapbox"
+      });
+    }
+    // Elevation may not have loaded yet. Pull back while flat before enabling terrain.
+    const zoom = terrainOverviewZoom();
+    map.stop();
+    map.jumpTo({ zoom, pitch: 0 });
+    map.setTerrain({ source: "guide-terrain", exaggeration: 1.3 });
+    map.easeTo({ zoom, pitch: 60, duration: 900 });
+  } else {
+    map.setTerrain(null);
+    map.easeTo({ pitch: 0, bearing: 0, duration: 650 });
+  }
+  bringGuideLayersToFront();
+  renderFloatingAreaPins();
+  syncMapTools();
+}
+
+function bindMapDisplayControls() {
+  document.querySelector("#map-basemap").addEventListener("change", event => {
+    const choice = event.target.value;
+    if (!MAP_STYLES[choice] || choice === mapBasemap) return;
+    mapBasemap = choice;
+    setMapControlStatus("Loading map…");
+    // Reload overlays after the new style loads; camera and selection are preserved.
+    // Stop the previous camera animation and release terrain before its DEM source.
+    map.stop();
+    if (mapStyleReady) map.setTerrain(null);
+    mapStyleReady = false;
+    syncMapCameraControls();
+    map.setStyle(MAP_STYLES[choice], { diff: false });
+  });
+  document.querySelectorAll("[data-map-dimension]").forEach(button => {
+    button.addEventListener("click", () => {
+      mapDimension = button.dataset.mapDimension;
+      document.querySelectorAll("[data-map-dimension]").forEach(item => {
+        item.setAttribute("aria-pressed", String(item.dataset.mapDimension === mapDimension));
+      });
+      setMapControlStatus(mapStyleReady ? "" : "Loading map…");
+      applyMapDimension();
+    });
+  });
+}
+
+function bringGuideLayersToFront() {
+  if (!map || !mapStyleReady) return;
+  // Keep our draped geometry above basemap raster/fill layers, then draw labels last.
+  const ids = ["areas-fill", "areas-hit", "areas-outline", "roads-line", "trails-line", "selected-area-outline", "area-labels", "roads-labels", "trails-labels", "pois-points", "pois-labels", "trailheads-symbols", "trailheads-labels"];
+  ids.forEach(id => { if (map.getLayer(id)) map.moveLayer(id); });
+}
+
+function terrainOverviewZoom(desiredZoom = map.getZoom()) {
+  const currentZoom = desiredZoom;
+  const center = map.getCenter();
+  const height = Math.max(1, map.getCanvas().clientHeight);
+  // Allow 5.5 km of camera height above sea level while DEM tiles are still loading.
+  // At 60 degrees pitch and MapLibre's default FOV, vertical clearance is
+  // approximately 0.75 * viewport height * ground meters per pixel.
+  const metersPerWorld = 40075016.686 * Math.cos(center.lat * Math.PI / 180);
+  const clearanceZoom = Math.log2(0.75 * height * metersPerWorld / (512 * 5500));
+  return Math.min(currentZoom, Math.max(map.getMinZoom(), Math.min(12, clearanceZoom)));
+}
+
+function renderFloatingAreaPins() {
+  if (!map || !mapStyleReady) return;
+  if (mapDimension !== "3d" && floatingAreaPopup) {
+    floatingAreaPopup.remove();
+    floatingAreaPopup = null;
+  }
+  const visibleAreas = mapDimension === "3d" ? state.datasets.areas : [];
+  const activeIds = new Set();
+  visibleAreas.forEach(area => {
+    const point = parsePoint(area.centroid);
+    if (!point) return;
+    const id = String(area.area_id);
+    activeIds.add(id);
+    let pin = floatingAreaPins.get(id);
+    if (!pin) {
+      const element = document.createElement("div");
+      element.className = "floating-area-pin";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "floating-area-pin-label";
+      const stem = document.createElement("span");
+      stem.className = "floating-area-pin-stem";
+      stem.setAttribute("aria-hidden", "true");
+      const dot = document.createElement("span");
+      dot.className = "floating-area-pin-dot";
+      dot.setAttribute("aria-hidden", "true");
+      element.append(button, stem, dot);
+      button.addEventListener("click", event => {
+        event.stopPropagation();
+        const currentArea = state.datasets.areas.find(item => String(item.area_id) === id);
+        const currentPoint = currentArea && parsePoint(currentArea.centroid);
+        if (!currentPoint) return;
+        floatingAreaPopup?.remove();
+        floatingAreaPopup = new maplibregl.Popup({ closeButton: true, closeOnClick: true, maxWidth: "320px", offset: [0, -66] })
+          .setLngLat([currentPoint[1], currentPoint[0]])
+          .setHTML(buildAreaPopupHtml(currentArea))
+          .addTo(map);
+        highlightArea(id);
+        bindAreaPopupActions(floatingAreaPopup, id);
+      });
+      const marker = new maplibregl.Marker({ element, anchor: "bottom", offset: [0, 4], pitchAlignment: "viewport", rotationAlignment: "viewport" });
+      pin = { marker, element, button };
+      floatingAreaPins.set(id, pin);
+      marker.setLngLat([point[1], point[0]]).addTo(map);
+    } else {
+      pin.marker.setLngLat([point[1], point[0]]);
+    }
+    pin.button.textContent = area.name || "Unnamed area";
+    pin.button.setAttribute("aria-label", "Show details for " + (area.name || "area"));
+    pin.element.classList.toggle("is-selected", id === highlightedAreaId);
+  });
+  floatingAreaPins.forEach((pin, id) => {
+    if (!activeIds.has(id)) {
+      pin.marker.remove();
+      floatingAreaPins.delete(id);
+    }
+  });
+  if (map.getLayer("area-labels")) {
+    map.setLayoutProperty("area-labels", "visibility", mapDimension === "3d" ? "none" : "visible");
+  }
+}
+
+function syncMapCameraControls() {
+  const controls = document.querySelector("#map-3d-controls");
+  if (!controls || !map) return;
+  controls.hidden = mapDimension !== "3d" || mapOpenWidget !== "camera";
+  syncMapTools();
+  const pitch = map.getPitch();
+  const value = document.querySelector("#map-pitch-value");
+  if (value) value.textContent = Math.round(pitch) + "° tilt";
+  document.querySelectorAll("[data-map-camera]").forEach(button => {
+    button.disabled = !mapStyleReady ||
+      (button.dataset.mapCamera === "tilt-down" && pitch <= 0) ||
+      (button.dataset.mapCamera === "tilt-up" && pitch >= 60);
+  });
+}
+
+function bindMapCameraControls() {
+  document.querySelectorAll("[data-map-camera]").forEach(button => {
+    button.addEventListener("click", () => moveMapCamera(button.dataset.mapCamera));
+  });
+  syncMapCameraControls();
+}
+
+function moveMapCamera(action) {
+  if (!map || !mapStyleReady || mapDimension !== "3d") return;
+  const options = { duration: 350 };
+  switch (action) {
+    case "tilt-down": options.pitch = Math.max(0, map.getPitch() - 10); break;
+    case "tilt-up": options.pitch = Math.min(60, map.getPitch() + 10); break;
+    case "rotate-left": options.bearing = map.getBearing() - 30; break;
+    case "rotate-right": options.bearing = map.getBearing() + 30; break;
+    case "north": options.bearing = 0; break;
+    case "reset": Object.assign(options, { zoom: terrainOverviewZoom(), pitch: 60, bearing: 0, duration: 650 }); break;
+    default: return;
+  }
+  map.stop();
+  map.easeTo(options);
+}
+
+function syncMapTools() {
+  const cameraButton = document.querySelector("#map-camera-widget");
+  if (cameraButton) cameraButton.hidden = mapDimension !== "3d";
+  if (mapDimension !== "3d" && mapOpenWidget === "camera") mapOpenWidget = "";
+  const panels = { search: "map-search-panel", layers: "map-display-controls", camera: "map-3d-controls" };
+  Object.entries(panels).forEach(([name, id]) => {
+    const panel = document.getElementById(id);
+    if (panel) panel.hidden = mapOpenWidget !== name;
+  });
+  document.querySelectorAll("[data-map-widget]").forEach(button => button.setAttribute("aria-expanded", String(mapOpenWidget === button.dataset.mapWidget)));
+  ["map-zoom-selection", "map-clear-selection"].forEach(id => {
+    const button = document.getElementById(id);
+    if (button) button.disabled = !highlightedAreaId;
+  });
+}
+
+function zoomToMapSelection() {
+  const area = areaById.get(highlightedAreaId);
+  if (!area || !mapStyleReady) return;
+  updateMap(area, "areas", mapDimension === "3d" ? terrainOverviewZoom(14) : 16);
+}
+
+function bindMapTools() {
+  document.querySelectorAll("[data-map-widget]").forEach(button => {
+    button.addEventListener("click", () => {
+      mapOpenWidget = mapOpenWidget === button.dataset.mapWidget ? "" : button.dataset.mapWidget;
+      syncMapTools();
+      if (mapOpenWidget === "search") document.getElementById("map-search-input").focus();
+    });
+  });
+  document.getElementById("map-home").addEventListener("click", () => { if (mapStyleReady) fitMapToOverview(); });
+  document.getElementById("map-zoom-selection").addEventListener("click", zoomToMapSelection);
+  document.getElementById("map-clear-selection").addEventListener("click", () => {
+    floatingAreaPopup?.remove();
+    floatingAreaPopup = null;
+    highlightArea("");
+  });
+  document.getElementById("map-search-input").addEventListener("input", () => {
+    const version = ++mapSearchVersion;
+    clearTimeout(mapSearchTimer);
+    mapSearchTimer = setTimeout(() => searchMapRecords(version), 250);
+  });
+  document.getElementById("map-search-results").addEventListener("click", event => {
+    const button = event.target.closest("[data-map-search-index]");
+    if (!button) return;
+    const match = mapSearchMatches[Number(button.dataset.mapSearchIndex)];
+    if (!match) return;
+    const area = detailMapArea(match.record, match.mode);
+    const target = parsePoint(match.record.centroid) ? match.record : area;
+    if (!target) return;
+    const mode = target === match.record ? match.mode : "areas";
+    updateMap(target, mode, mapDimension === "3d" ? terrainOverviewZoom(14) : mode === "areas" ? 16 : undefined);
+    highlightArea(area?.area_id ?? "");
+    mapOpenWidget = "";
+    syncMapTools();
+  });
+  syncMapTools();
+}
+
+async function searchMapRecords(version) {
+  const query = document.getElementById("map-search-input").value.trim();
+  const results = document.getElementById("map-search-results");
+  mapSearchMatches = [];
+  if (query.length < 2) { results.textContent = "Type at least two characters."; return; }
+  const term = query.toLowerCase();
+  const local = [
+    ...state.datasets.areas.filter(item => String(item.name || "").toLowerCase().includes(term)).map(record => ({ record, mode: "areas", label: "Area" })),
+    ...state.datasets.subareas.filter(item => String(item.name || "").toLowerCase().includes(term)).map(record => ({ record, mode: "subareas", label: "Subarea" }))
+  ];
+  results.textContent = "Searching…";
+  const response = await fetchJson(state.apiBase + "/routes/?search=" + encodeURIComponent(query));
+  if (version !== mapSearchVersion) return;
+  const routes = response.ok && Array.isArray(response.data) ? response.data.map(enrichRoute).map(record => ({ record, mode: "routes", label: "Route" })) : [];
+  mapSearchMatches = [...local, ...routes].filter(match => {
+    const area = detailMapArea(match.record, match.mode);
+    return parsePoint(match.record.centroid) || (area && parsePoint(area.centroid));
+  }).slice(0, 12);
+  results.innerHTML = mapSearchMatches.length ? mapSearchMatches.map((match, index) => '<button type="button" class="map-search-result" data-map-search-index="' + index + '"><strong>' + escapeHtml(match.record.name || "Unnamed") + '</strong><span>' + match.label + (match.record.grade ? " · " + escapeHtml(match.record.grade) : "") + '</span></button>').join("") : response.ok ? '<p class="muted">No mapped areas or routes found.</p>' : '<p class="muted">Unable to search routes. Try again.</p>';
+  if (!response.ok && mapSearchMatches.length) results.innerHTML += '<p class="muted">Route search unavailable. Showing areas and subareas.</p>';
+}

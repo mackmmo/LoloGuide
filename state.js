@@ -36,6 +36,7 @@ const state = {
   filtersCollapsed: false,
   profile: null,
   logbook: [],
+  competitionSends: [],
   todos: [],
   detailTab: "details",
   community: {

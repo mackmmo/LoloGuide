@@ -14,6 +14,7 @@ function showMobileGuidePanel(panel) {
     "mobile-guide-detail",
     panel === "detail"
   );
+  window.scrollTo(0, 0);
 }
 
 function renderStatus() {
@@ -241,7 +242,7 @@ if (mode === "routes") {
       >${todo ? "✓" : "+"}</button>
     </span>`;
 } else {
-  el.detailTitle.textContent = recordTitle(record);
+  el.detailTitle.innerHTML = `<button class="mobile-back-to-routes" type="button">← Browse routes</button><span>${escapeHtml(recordTitle(record))}</span>`;
 }
 
 document.querySelector(".mobile-back-to-routes")
@@ -249,13 +250,17 @@ document.querySelector(".mobile-back-to-routes")
     showMobileGuidePanel("browse");
   });
 
-el.detailSubtitle.textContent = "";
-
-  el.detailSubtitle.textContent = "";
+el.detailSubtitle.innerHTML = buildDetailNav(record, mode);
+  el.detailSubtitle.querySelectorAll("[data-nav-mode]").forEach(button => {
+    button.addEventListener("click", () => jumpTo(button.dataset.navMode, button.dataset.navId));
+  });
+  const mapArea = detailMapArea(record, mode);
+  const mapTarget = mapArea && parsePoint(mapArea.centroid);
+  const mapAction = mapTarget ? '<button type="button" class="ghost see-on-map">See on Map</button>' : '';
 
   if (mode === "routes") {
     el.detailNav.innerHTML = `
-      <div class="route-detail-tabs" role="tablist" aria-label="Route detail">
+      ${mapAction}<div class="route-detail-tabs" role="tablist" aria-label="Route detail">
         <button type="button" class="route-detail-tab ${state.detailTab === "details" ? "is-active" : ""}" data-detail-tab="details">Details</button>
         <button type="button" class="route-detail-tab ${state.detailTab === "community" ? "is-active" : ""}" data-detail-tab="community">Community</button>
       </div>`;
@@ -268,19 +273,23 @@ el.detailSubtitle.textContent = "";
       renderRouteDetailsPanel(record);
     }
   } else {
+    document.querySelector(".detail-panel")?.classList.remove("community-mode");
+    el.detailDescription.classList.remove("community-full-panel");
     if (el.detailNav) {
-      el.detailNav.innerHTML = buildDetailNav(record, mode);
+      el.detailNav.innerHTML = mapAction;
       bindDetailNav();
     }
     el.detailDescription.innerHTML = buildDetailDescription(record, mode);
     if (el.detailRelated) {
       el.detailRelated.innerHTML = buildDetailRelated(record, mode);
       bindDetailNav();
+      bindSubareaRouteLinks();
     }
     el.detailFacts.innerHTML = detailFacts(record, mode).map(renderFact).join("");
     if (el.detailLog) el.detailLog.innerHTML = "";
   }
 
+  el.detailNav.querySelector(".see-on-map")?.addEventListener("click", () => seeDetailOnMap(record, mode));
   updateMap(record, mode);
 }
 
@@ -525,6 +534,12 @@ function buildDetailDescription(record, mode) {
 }
 
 function buildDetailRelated(record, mode) {
+  if (mode === "subareas") {
+    const routes = state.datasets.routes.filter(route => String(route.subarea) === String(record.subarea_id));
+    const message = state.loadErrors.routes ? "Unable to load routes. Please try again." : "No routes match the current filters.";
+    return '<section class="mobile-subarea-routes" aria-label="Routes in this subarea"><h3>Routes (' + routes.length + ')</h3><div class="subarea-route-list">' +
+      (routes.length ? routes.map(route => '<button type="button" class="record-card" data-related-route-id="' + escapeHtml(String(route.route_id)) + '"><strong>' + escapeHtml(recordTitle(route)) + '</strong><span>' + escapeHtml(route.grade || "") + '</span></button>').join("") : '<p class="muted">' + message + '</p>') + '</div></section>';
+  }
   if (mode !== "areas") {
     return "";
   }
@@ -554,37 +569,20 @@ function buildDetailRelated(record, mode) {
 
 function buildDetailNav(record, mode) {
   const items = [];
-
-  if (mode === "routes") {
-    const subarea = record.subarea ? subareaById.get(String(record.subarea)) : null;
-    const area = record.area ? areaById.get(String(record.area)) : subarea ? areaById.get(String(subarea.area)) : null;
-
-    if (area) {
-      items.push(`<button class="detail-nav-chip" type="button" data-nav-mode="areas" data-nav-id="${area.area_id}">${escapeHtml(area.name)}</button>`);
-    }
-    if (subarea) {
-      items.push(`<button class="detail-nav-chip" type="button" data-nav-mode="subareas" data-nav-id="${subarea.subarea_id}">${escapeHtml(subarea.name)}</button>`);
-    }
-  } else if (mode === "subareas") {
-    const area = record.area ? areaById.get(String(record.area)) : null;
-    if (area) {
-      items.push(`<button class="detail-nav-chip" type="button" data-nav-mode="areas" data-nav-id="${area.area_id}">${escapeHtml(area.name)}</button>`);
-    }
-  }
-
-  if (!items.length) {
-    return "";
-  }
-
-  return `<div class="detail-nav-row">${items.join("")}</div>`;
+  const subarea = mode === "routes" ? subareaById.get(String(record.subarea)) : null;
+  const area = mode === "areas" ? null : areaById.get(String(record.area ?? subarea?.area));
+  const link = (item, kind, id) => `<button class="breadcrumb-link" type="button" data-nav-mode="${kind}" data-nav-id="${escapeHtml(String(id))}">${escapeHtml(item.name)}</button>`;
+  if (area) items.push(link(area, "areas", area.area_id));
+  if (subarea) items.push(link(subarea, "subareas", subarea.subarea_id));
+  items.push(`<span aria-current="page">${escapeHtml(recordTitle(record))}</span>`);
+  return `<span class="guide-breadcrumbs" role="navigation" aria-label="Guide path">${items.join('<span class="breadcrumb-separator" aria-hidden="true"> &gt; </span>')}</span>`;
 }
-
 
 function bindDetailNav() {
   document.querySelectorAll("[data-nav-mode][data-nav-id]").forEach((button) => {
-    button.addEventListener("click", () => {
+    button.onclick = () => {
       jumpTo(button.dataset.navMode, button.dataset.navId);
-    });
+    };
   });
 }
 
@@ -721,6 +719,8 @@ function buildRouteLogCard(route) {
   return `
     <div class="route-log-overview route-log-overview--compact">
       <button id="route-log-open" class="route-log-open route-log-open--compact" type="button">${log ? "Edit Log" : "Log Route"}</button>
+      <button id="route-repeat-open" class="ghost" type="button">Log another send</button>
+      <div class="send-history">${(state.competitionSends || []).filter(x => String(x.route) === String(route.route_id)).map(x => `<div class="send-history-row"><span>${escapeHtml(x.date_sent)} · ${escapeHtml(x.send_style || "sent")}</span><button type="button" class="ghost" data-edit-annual="${Number(x.id)}">Edit send</button></div>`).join("")}</div>
     </div>`;
 }
 
@@ -728,10 +728,10 @@ function closeRouteLogModal() {
   document.querySelector("#route-log-modal")?.remove();
 }
 
-function openRouteLogModal(route) {
+function openRouteLogModal(route, repeatSend = false, annualSend = null) {
   closeRouteLogModal();
-  const log = existingRouteLog(route.route_id);
-  const sent = log?.status === "sent";
+  const log = annualSend ? {...annualSend, status: "sent"} : repeatSend ? null : existingRouteLog(route.route_id);
+  const sent = repeatSend || log?.status === "sent";
   const modal = document.createElement("div");
   modal.id = "route-log-modal";
   modal.className = "route-log-modal";
@@ -743,11 +743,12 @@ function openRouteLogModal(route) {
       </div>
       ${log ? `<p class="route-log-current">${escapeHtml(formatLogSummary(log))}</p>` : ""}
       <form id="route-log-form" class="route-log-form">
-        <label><span>Status</span><select name="status"><option value="project" ${!sent ? "selected" : ""}>Project</option><option value="sent" ${sent ? "selected" : ""}>Sent</option></select></label>
+        <label><span>Status</span><select name="status" ${repeatSend || annualSend ? "disabled" : ""}><option value="project" ${!sent ? "selected" : ""}>Project</option><option value="sent" ${sent ? "selected" : ""}>Sent</option></select></label>
         <label class="route-log-send-field"><span>Send style</span><select name="send_style"><option value="">—</option>${["onsight","flash","redpoint","pinkpoint"].map(v => `<option value="${v}" ${log?.send_style === v ? "selected" : ""}>${v[0].toUpperCase()+v.slice(1)}</option>`).join("")}</select></label>
-        <label><span>Attempts</span><input name="attempts" type="number" min="0" value="${Number(log?.attempts || 0)}" /></label>
-        <label class="route-log-date-field"><span>Date sent</span><input name="date_sent" type="date" value="${escapeHtml(log?.date_sent || "")}" /></label>
-        <label class="route-log-beta"><span>Private beta</span><textarea name="beta" rows="4" placeholder="Your private beta…">${escapeHtml(log?.beta || "")}</textarea></label>
+        <label ${repeatSend || annualSend ? "hidden" : ""}><span>Attempts</span><input name="attempts" type="number" min="0" value="${Number(log?.attempts || 0)}" /></label>
+        <label class="route-log-date-field"><span>Date sent</span><input name="date_sent" type="date" value="${escapeHtml(log?.date_sent || "")}" ${repeatSend || annualSend ? "required" : ""} /></label>
+        <p class="muted">Date sent is required for leaderboard points. JuntMasters counts a route once in its Date sent year, including backlogged sends. Enable leaderboard publication in Profile to participate.</p>
+        <label class="route-log-beta" ${repeatSend || annualSend ? "hidden" : ""}><span>Private beta</span><textarea name="beta" rows="4" placeholder="Your private beta…">${escapeHtml(log?.beta || "")}</textarea></label>
         <div class="route-log-actions"><button class="auth-primary" type="submit">${log ? "Update Log" : "Save Log"}</button>${log ? `<button id="route-log-delete" class="ghost" type="button">Remove</button>` : ""}</div>
         <p id="route-log-message" class="route-log-message"></p>
       </form>
@@ -756,6 +757,10 @@ function openRouteLogModal(route) {
 
   const form = modal.querySelector("#route-log-form");
   const status = form.elements.status;
+  if (repeatSend) modal.querySelector(".eyebrow").textContent = "Log another send";
+  const dateInput = form.elements.date_sent;
+  dateInput.max = new Intl.DateTimeFormat("en-CA", {timeZone:"America/Denver", year:"numeric", month:"2-digit", day:"2-digit"}).format(new Date());
+  if (repeatSend) dateInput.value = dateInput.max;
   const sendField = modal.querySelector(".route-log-send-field");
   const dateField = modal.querySelector(".route-log-date-field");
   const syncStatusFields = () => {
@@ -781,9 +786,12 @@ function openRouteLogModal(route) {
     event.preventDefault();
     const fd = new FormData(form);
     const payload = { route: route.route_id, status: fd.get("status"), send_style: fd.get("send_style") || null, attempts: Number(fd.get("attempts") || 0), date_sent: fd.get("date_sent") || null, beta: fd.get("beta") || null };
+    if (repeatSend || annualSend) payload.status = "sent";
     if (payload.status !== "sent") { payload.send_style = null; payload.date_sent = null; }
     const existing = existingRouteLog(route.route_id);
-    const result = existing ? await updateRouteLog(existing.log_id, payload) : await createRouteLog(payload);
+    const result = annualSend ? await updateCompetitionSend(annualSend.id, {date_sent: payload.date_sent, send_style: payload.send_style})
+      : repeatSend ? await createCompetitionSend({route: route.route_id, date_sent: payload.date_sent, send_style: payload.send_style})
+      : existing ? await updateRouteLog(existing.log_id, payload) : await createRouteLog(payload);
     const msg = modal.querySelector("#route-log-message");
     if (!result.ok) { if (msg) msg.textContent = String(result.error); return; }
     await loadLogbook();
@@ -793,8 +801,8 @@ function openRouteLogModal(route) {
 
   modal.querySelector("#route-log-delete")?.addEventListener("click", async () => {
     const existing = existingRouteLog(route.route_id);
-    if (!existing || !confirm("Remove this route from your Log Book?")) return;
-    const result = await deleteRouteLog(existing.log_id);
+    if ((!existing && !annualSend) || !confirm("Remove this send or log from your Log Book?")) return;
+    const result = annualSend ? await deleteCompetitionSend(annualSend.id) : await deleteRouteLog(existing.log_id);
     if (result.ok) { await loadLogbook(); closeRouteLogModal(); renderDetail(); }
   });
 }
@@ -802,4 +810,23 @@ function openRouteLogModal(route) {
 function bindRouteLogCard(route, mode) {
   if (mode !== "routes" || !route) return;
   document.querySelector("#route-log-open")?.addEventListener("click", () => openRouteLogModal(route));
+  document.querySelector("#route-repeat-open")?.addEventListener("click", () => openRouteLogModal(route, true));
+  document.querySelectorAll("[data-edit-annual]").forEach(button => button.addEventListener("click", () => {
+    const send = (state.competitionSends || []).find(x => String(x.id) === button.dataset.editAnnual);
+    if (send) openRouteLogModal(route, false, send);
+  }));
+}
+
+function bindSubareaRouteLinks() {
+  el.detailRelated.querySelectorAll("[data-related-route-id]").forEach(button => {
+    button.addEventListener("click", () => {
+      const route = state.datasets.routes.find(item => String(item.route_id) === button.dataset.relatedRouteId);
+      if (!route) return;
+      state.selected = route;
+      state.detailTab = "details";
+      showMobileGuidePanel("detail");
+      renderDetail();
+      renderList();
+    });
+  });
 }

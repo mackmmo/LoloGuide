@@ -46,7 +46,7 @@ function renderCommunityFeed() {
   container.innerHTML = visible.map(ascent => `
     <div class="community-ascent-row">
       <span class="ascent-name">${escapeHtml(ascent.username || "")}</span>
-      <span class="ascent-route">${escapeHtml(ascent.route_name || "")}</span>
+      <button type="button" class="ascent-route feed-route-link" data-feed-route-id="${escapeHtml(String(ascent.route_id ?? ascent.route ?? ""))}" data-feed-route-name="${escapeHtml(ascent.route_name || "")}">${escapeHtml(ascent.route_name || "")}</button>
       <span class="ascent-grade">${escapeHtml(ascent.grade || "")}</span>
       <span class="ascent-style">${escapeHtml(ascent.send_style || "")}</span>
       <span class="ascent-date">${escapeHtml(ascent.date_sent || "")}</span>
@@ -58,15 +58,69 @@ document.addEventListener("change", event => {
   if (event.target?.id === "community-date-filter") renderCommunityFeed();
 });
 
-el.communityFeedButton.addEventListener("click", async () => {
-  showView("community");
-  el.communityFeed.innerHTML = '<p class="muted">Loading sends…</p>';
-  const result = await getCommunityFeed();
-  if (!result.ok) {
-    el.communityFeed.textContent = `Unable to load community sends: ${result.error || "Unknown error"}`;
-    return;
+let communityTab = "feed";
+let communityRequest = 0;
+const competitionYear = () => Number(new Intl.DateTimeFormat("en-US", {timeZone: "America/Denver", year: "numeric"}).format(new Date()));
+document.querySelector("#leaderboard-year").value = competitionYear();
+document.querySelector("#leaderboard-year").max = competitionYear();
+
+function renderStandings(entries) {
+  if (!entries.length) return '<p class="muted">No eligible published sends yet. Enable leaderboard sharing in Profile to include your dated sends.</p>';
+  return `<table class="leaderboard-table"><thead><tr><th>Rank</th><th>Climber</th><th>Points</th><th>Routes</th></tr></thead><tbody>${entries.map(x => `<tr><td>${Number(x.rank)}</td><td>${escapeHtml(x.username)}</td><td>${Number(x.points)}</td><td>${Number(x.route_count)}</td></tr>`).join("")}</tbody></table>`;
+}
+
+async function refreshCommunityView() {
+  const request = ++communityRequest;
+  communityAscents = [];
+  document.querySelectorAll("[data-community-tab]").forEach(button => {
+    const active = button.dataset.communityTab === communityTab;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+  document.querySelector("#community-sends-panel").hidden = communityTab !== "feed";
+  document.querySelector("#community-leaderboard-panel").hidden = communityTab !== "leaderboard";
+  document.querySelector("#community-hall-panel").hidden = communityTab !== "hall";
+  // Clear every cached public view when publication settings change.
+  ["community-feed", "leaderboard-results", "hall-results"].forEach(id => document.getElementById(id).replaceChildren());
+  const target = document.getElementById(communityTab === "feed" ? "community-feed" : communityTab === "hall" ? "hall-results" : "leaderboard-results");
+  target.innerHTML = '<p class="muted">Loading…</p>';
+  let result;
+  if (communityTab === "feed") result = await getCommunityFeed();
+  else if (communityTab === "hall") result = await getHallOfFame();
+  else {
+    const board = document.querySelector("#leaderboard-board").value;
+    const year = document.querySelector("#leaderboard-year").value;
+    document.querySelector("#leaderboard-year-label").hidden = board === "alltime";
+    document.querySelector("#leaderboard-rules").textContent = board === "juntmasters"
+      ? "Grade index points. Each route counts once per climber per year. Date sent determines the year; backlogged sends count too. Enable leaderboard sharing in Profile to participate. Past-year routes can count again this year."
+      : "Grade index points. Each dated route counts once per climber across all years.";
+    result = await getLeaderboard(board, year);
   }
-  const data = result.data;
-  communityAscents = Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : [];
-  renderCommunityFeed();
+  if (request !== communityRequest) return;
+  if (!result.ok) { target.textContent = String(result.error); return; }
+  if (communityTab === "feed") {
+    communityAscents = Array.isArray(result.data) ? result.data : (result.data?.results || []);
+    renderCommunityFeed();
+  } else if (communityTab === "leaderboard") target.innerHTML = renderStandings(result.data.entries || []);
+  else {
+    const seasons = (result.data.seasons || []).filter(season => season.year >= 2026 && season.year < competitionYear());
+    target.innerHTML = seasons.length ? seasons.map(season => `<article class="hall-season"><h2>${Number(season.year)} JuntMasters</h2>${season.winners.length ? renderStandings(season.winners) : '<p class="muted">No published winner.</p>'}</article>`).join("") : '<p class="muted">The first JuntMasters season is 2026. Winners will appear after the season ends.</p>';
+  }
+}
+
+el.communityFeedButton.addEventListener("click", () => { showView("community"); refreshCommunityView(); });
+document.querySelectorAll("[data-community-tab]").forEach(button => button.addEventListener("click", () => { communityTab = button.dataset.communityTab; refreshCommunityView(); }));
+["leaderboard-board", "leaderboard-year"].forEach(id => document.getElementById(id).addEventListener("change", refreshCommunityView));
+
+document.querySelector("#community-feed")?.addEventListener("click", async event => {
+  const button = event.target.closest("[data-feed-route-id]");
+  if (!button || button.disabled) return;
+  button.disabled = true;
+  try {
+    await openRouteInGuide(button.dataset.feedRouteId, button.dataset.feedRouteName);
+  } catch (error) {
+    alert(error.message);
+  } finally {
+    button.disabled = false;
+  }
 });

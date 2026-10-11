@@ -38,8 +38,9 @@ function showLogin(message = "") {
 }
 
 async function loadLogbook() {
-  const result = await getLogbook();
+  const [result, sends] = await Promise.all([getLogbook(), getCompetitionSends()]);
   if (result.ok) state.logbook = Array.isArray(result.data) ? result.data : [];
+  if (sends.ok) state.competitionSends = Array.isArray(sends.data) ? sends.data : (sends.data?.results || []);
   return result;
 }
 
@@ -60,6 +61,30 @@ async function openAccountView(view) {
     if (!result.ok) { el.accountModalBody.textContent = String(result.error); return; }
     state.profile = result.data;
     el.accountModalBody.innerHTML = `<div class="profile-summary"><strong>${escapeHtml(result.data.username || "")}</strong><span>${escapeHtml(result.data.email || "")}</span></div><form id="password-form" class="account-form"><h3>Change password</h3><label><span>Current password</span><input name="current_password" type="password" required></label><label><span>New password</span><input name="new_password" type="password" required></label><button class="auth-primary" type="submit">Change password</button><p id="password-message" class="route-log-message"></p></form>`;
+    const permissions = result.data.data_permissions || {};
+    document.querySelector("#password-form").insertAdjacentHTML("beforebegin", `
+      <section class="data-permissions"><h3>Data permissions</h3>
+        <label><input type="checkbox" data-publication="publish_feed" ${permissions.publish_feed ? "checked" : ""}><span>Publish my sends to the feed</span></label>
+        <label><input type="checkbox" data-publication="publish_leaderboards" ${permissions.publish_leaderboards ? "checked" : ""}><span>Include my sends in leaderboards and Junts Hall of Fame</span></label>
+        <p class="muted">Turning a setting off removes your published entries from that view. Your private Log Book is kept. Private beta is never published.</p>
+        <p id="publication-message" role="status"></p>
+      </section>`);
+    el.accountModalBody.querySelectorAll("[data-publication]").forEach(toggle => toggle.addEventListener("change", async () => {
+      const key = toggle.dataset.publication;
+      const previous = Boolean(state.profile.data_permissions?.[key]);
+      el.accountModalBody.querySelectorAll("[data-publication]").forEach(input => input.disabled = true);
+      const saved = await updateDataPermissions({[key]: toggle.checked});
+      if (saved.ok) {
+        state.profile = saved.data;
+        document.querySelector("#publication-message").textContent = "Saved. Publication settings apply to existing and future sends.";
+        if (typeof refreshCommunityView === "function") refreshCommunityView();
+        if (state.mode === "routes") renderDetail();
+      } else {
+        toggle.checked = previous;
+        document.querySelector("#publication-message").textContent = String(saved.error);
+      }
+      el.accountModalBody.querySelectorAll("[data-publication]").forEach(input => input.disabled = false);
+    }));
     document.querySelector("#password-form")?.addEventListener("submit", async (event) => { event.preventDefault(); const fd=new FormData(event.currentTarget); const r=await changePassword(fd.get("current_password"),fd.get("new_password")); document.querySelector("#password-message").textContent=r.ok?"Password changed.":String(r.error); if(r.ok) event.currentTarget.reset(); });
   } else {
     el.accountModalTitle.textContent = "Log Book";
@@ -73,11 +98,12 @@ function renderLogbookModal(activeTab = "todo") {
   const entries = state.logbook || [];
   const todos = state.todos || [];
   const projects = entries.filter((x) => x.status !== "sent");
-  const sends = entries.filter((x) => x.status === "sent");
+  const annual = state.competitionSends || [];
+  const sends = [...annual.map(x => ({...entries.find(log => String(log.route) === String(x.route) && Number(log.date_sent?.slice(0,4)) === x.year), ...x, status: "sent"})), ...entries.filter(x => x.status === "sent" && !annual.some(a => String(a.route) === String(x.route) && a.year === Number(x.date_sent?.slice(0,4))))];
 
   const logCards = (items) => items.length ? items.map((x) => `
     <article class="logbook-entry">
-      <div><strong>${escapeHtml(x.route_name || `Route ${x.route}`)}</strong><span>${escapeHtml(x.grade || "")} · ${Number(x.attempts || 0)} attempt${Number(x.attempts || 0) === 1 ? "" : "s"}</span></div>
+      <div><button type="button" class="logbook-route-link" data-logbook-route="${escapeHtml(String(x.route))}">${escapeHtml(x.route_name || `Route ${x.route}`)}</button><span>${escapeHtml(x.grade || "")} · ${x.attempts != null ? `${Number(x.attempts)} attempt${Number(x.attempts) === 1 ? "" : "s"}` : "dated send"}</span></div>
       <span class="logbook-status">${escapeHtml(x.status === "sent" ? (x.send_style || "sent") : "project")}</span>
       ${x.date_sent ? `<small>${escapeHtml(x.date_sent)}</small>` : ""}
       ${x.beta ? `<p><strong>Beta</strong> ${escapeHtml(x.beta)}</p>` : ""}
@@ -85,7 +111,7 @@ function renderLogbookModal(activeTab = "todo") {
 
   const todoCards = todos.length ? todos.map((x) => `
     <article class="logbook-entry logbook-todo-entry">
-      <div><strong>${escapeHtml(x.route_name || `Route ${x.route}`)}</strong><span>${escapeHtml(x.grade || "")}</span></div>
+      <div><button type="button" class="logbook-route-link" data-logbook-route="${escapeHtml(String(x.route))}">${escapeHtml(x.route_name || `Route ${x.route}`)}</button><span>${escapeHtml(x.grade || "")}</span></div>
       <span class="logbook-status">To-Do</span>
     </article>`).join("") : `<p class="muted">No routes in your To-Do list yet. Use the + beside a route name to add one.</p>`;
 
@@ -104,6 +130,20 @@ function renderLogbookModal(activeTab = "todo") {
 
   el.accountModalBody.querySelectorAll("[data-logbook-tab]").forEach((button) => {
     button.addEventListener("click", () => renderLogbookModal(button.dataset.logbookTab));
+  });
+  bindLogbookRouteLinks();
+}
+
+function bindLogbookRouteLinks() {
+  el.accountModalBody.querySelectorAll("[data-logbook-route]").forEach(button => {
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      try {
+        await openRouteInGuide(button.dataset.logbookRoute);
+        el.accountModal.hidden = true;
+      } catch (error) { alert(error.message); }
+      finally { button.disabled = false; }
+    });
   });
 }
 

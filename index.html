@@ -23,7 +23,7 @@
       href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=87" />
+    <link rel="stylesheet" href="./styles.css?v=98" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-BYGF2CWJ49"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -103,10 +103,10 @@
 
             <div id="account-menu" class="account-menu" hidden>
               <button type="button" data-account-view="profile">Profile</button>
+              <button type="button" data-account-view="logbook">Logbook</button>
               <button id="guide-view">Guide</button>
               <button id="map-view">Map</button>
               <button id="community-feed-button">Feed</button>
-              <button type="button" data-account-view="logbook">Log Book</button>
               <button id="logout-button" type="button">Log out</button>
               
             </div>
@@ -114,6 +114,12 @@
       </header>
             
       <section id="community-feed-page" hidden>
+        <div class="community-tabs" role="tablist" aria-label="Community">
+          <button type="button" role="tab" aria-selected="true" data-community-tab="feed" class="is-active">Feed</button>
+          <button type="button" role="tab" aria-selected="false" data-community-tab="leaderboard">Leaderboards</button>
+          <button type="button" role="tab" aria-selected="false" data-community-tab="hall">Junts Hall of Fame</button>
+        </div>
+        <section id="community-sends-panel">
         <div class="community-feed-heading">
           <h1>Feed</h1>
           <label class="community-date-filter" for="community-date-filter">
@@ -135,6 +141,17 @@
           <span>Date</span>
         </div>
         <div id="community-feed"></div>
+        </section>
+        <section id="community-leaderboard-panel" hidden>
+          <h1>Leaderboards</h1>
+          <div class="leaderboard-controls">
+            <label>Competition<select id="leaderboard-board"><option value="juntmasters">JuntMasters</option><option value="alltime">All-Time</option></select></label>
+            <label id="leaderboard-year-label">Year<input id="leaderboard-year" type="number" min="2026" step="1"></label>
+          </div>
+          <p class="muted" id="leaderboard-rules"></p>
+          <div id="leaderboard-results" aria-live="polite"></div>
+        </section>
+        <section id="community-hall-panel" hidden><h1>Junts Hall of Fame</h1><p class="muted">JuntMasters begins in 2026. Winners appear after each season ends. Tied winners share the title.</p><div id="hall-results" aria-live="polite"></div></section>
       </section>
       
       <aside class="panel filters-panel">
@@ -211,6 +228,44 @@
 
       <section class="map-column">
         <div id="map"></div>
+        <div id="map-display-controls" class="map-display-controls" aria-label="Map display" hidden>
+          <label for="map-basemap">Map layer</label>
+          <select id="map-basemap">
+            <option value="custom">Custom</option>
+            <option value="topo">Topo</option>
+            <option value="satellite">Satellite</option>
+          </select>
+          <div class="map-dimension-buttons" role="group" aria-label="Map dimension">
+            <button type="button" data-map-dimension="2d" aria-pressed="true">2D</button>
+            <button type="button" data-map-dimension="3d" aria-pressed="false">3D</button>
+          </div>
+          <p id="map-display-status" role="status" hidden></p>
+        </div>
+        <section id="map-3d-controls" class="map-3d-controls" aria-label="3D camera controls" hidden>
+          <div class="map-3d-control-heading"><strong>3D view</strong><span id="map-pitch-value">60° tilt</span></div>
+          <div class="map-3d-control-grid">
+            <button type="button" data-map-camera="tilt-down" aria-label="Tilt down toward overhead view">Tilt −</button>
+            <button type="button" data-map-camera="tilt-up" aria-label="Tilt up toward the horizon">Tilt +</button>
+            <button type="button" data-map-camera="north" aria-label="Point map north">North ↑</button>
+            <button type="button" data-map-camera="rotate-left" aria-label="Rotate view left">↶ Left</button>
+            <button type="button" data-map-camera="rotate-right" aria-label="Rotate view right">Right ↷</button>
+            <button type="button" data-map-camera="reset" aria-label="Reset to a safe 3D overview">Reset view</button>
+          </div>
+        </section>
+        <div class="map-tools" role="group" aria-label="Map tools">
+          <button id="map-home" type="button" aria-label="Home: show all climbing areas" title="Home">⌂</button>
+          <button type="button" data-map-widget="search" aria-controls="map-search-panel" aria-expanded="false" aria-label="Search map" title="Search">⌕</button>
+          <button type="button" data-map-widget="layers" aria-controls="map-display-controls" aria-expanded="false" aria-label="Map layers" title="Layers">▱</button>
+          <button id="map-camera-widget" type="button" data-map-widget="camera" aria-controls="map-3d-controls" aria-expanded="false" aria-label="3D camera controls" title="3D controls" hidden>3D</button>
+          <button id="map-zoom-selection" type="button" aria-label="Zoom to selected area" title="Zoom to selection" disabled>⊙</button>
+          <button id="map-clear-selection" type="button" aria-label="Clear selected area" title="Clear selection" disabled>×</button>
+          <button id="map-back-to-guide" class="map-back-to-guide" type="button" aria-label="Back to Guide" title="Back to Guide">←</button>
+        </div>
+        <section id="map-search-panel" class="map-search-panel" aria-label="Search map" hidden>
+          <label for="map-search-input">Find an area or route</label>
+          <input id="map-search-input" type="search" placeholder="Area, subarea, or route…" autocomplete="off" />
+          <div id="map-search-results" aria-live="polite"></div>
+        </section>
       </section>
 
 
@@ -228,14 +283,14 @@
 
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
     <script src="./dom.js?v=70"></script>
-    <script src="./view.js?v=4"></script>
-    <script src="./state.js?v=69"></script>
+    <script src="./view.js?v=6"></script>
+    <script src="./state.js?v=70"></script>
     <script src="./utils/utils.js?v=68"></script>
-    <script src="./api.js?v=71"></script>
-    <script src="./events.js?v=68"></script>
-    <script src="./map.js?v=68"></script>
-    <script src="./render.js?v=72"></script>
-    <script src="./app.js?v=73"></script>
-    <script src="./community.js?v=91"></script>
+    <script src="./api.js?v=72"></script>
+    <script src="./events.js?v=71"></script>
+    <script src="./map.js?v=79"></script>
+    <script src="./render.js?v=77"></script>
+    <script src="./app.js?v=75"></script>
+    <script src="./community.js?v=95"></script>
   </body>
 </html>

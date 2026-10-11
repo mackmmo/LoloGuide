@@ -110,6 +110,10 @@ function bindEvents() {
 }
 
 function jumpTo(mode, id) {
+  showView("guide");
+  showMobileGuidePanel("detail");
+  state.filters.search = "";
+  state.filters.type = "";
   state.mode = mode;
   state.contextRecord = null;
   state.contextMode = null;
@@ -134,6 +138,7 @@ function jumpTo(mode, id) {
     }
   }
 
+  renderFilters();
   loadRoutesFromBackend().then(() => {
     if (mode === "areas") updateMap(areaById.get(String(id)), "areas");
     if (mode === "subareas") updateMap(subareaById.get(String(id)), "subareas");
@@ -154,4 +159,46 @@ function subareaMatchesArea(subareaId, areaId) {
   }
   const subarea = subareaById.get(String(subareaId));
   return subarea ? String(subarea.area) === String(areaId) : false;
+}
+
+async function openRouteInGuide(routeId, routeName = "") {
+  let route = state.datasets.routes.find(item => routeId && String(item.route_id) === String(routeId));
+  if (!route) {
+    const result = await fetchJson(`${state.apiBase}/routes/${routeId ? "" : "?search=" + encodeURIComponent(routeName)}`);
+    if (!result.ok) throw new Error(String(result.error || "Unable to load route"));
+    const routes = Array.isArray(result.data) ? result.data : [];
+    const matches = routes.filter(item => routeId ? String(item.route_id) === String(routeId) : item.name === routeName);
+    if (matches.length !== 1) throw new Error(matches.length ? "Multiple routes share this name. Please find the route in the guide." : "This route is no longer available.");
+    route = enrichRoute(matches[0]);
+  }
+  const subarea = subareaById.get(String(route.subarea));
+  const area = areaById.get(String(route.area ?? subarea?.area));
+  state.filters = { search: "", sectorId: String(area?.sector ?? ""), areaId: String(area?.area_id ?? ""), subareaId: String(subarea?.subarea_id ?? ""), type: "", sort: "default" };
+  state.selected = null;
+  state.contextRecord = null;
+  state.contextMode = null;
+  state.mode = "routes";
+  state.detailTab = "details";
+  await loadRoutesFromBackend();
+  if (state.loadErrors.routes) throw new Error(String(state.loadErrors.routes));
+  state.selected = state.datasets.routes.find(item => String(item.route_id) === String(route.route_id)) || route;
+  showView("guide");
+  showMobileGuidePanel("detail");
+  render();
+}
+
+function detailMapArea(record, mode) {
+  if (mode === "areas") return record;
+  const subarea = mode === "routes" ? subareaById.get(String(record.subarea)) : null;
+  return areaById.get(String(record.area ?? subarea?.area)) || null;
+}
+
+function seeDetailOnMap(record, mode) {
+  const area = detailMapArea(record, mode);
+  if (!area || !parsePoint(area.centroid)) return;
+  showView("map");
+  requestAnimationFrame(() => {
+    map?.resize();
+    updateMap(area, "areas", 16);
+  });
 }

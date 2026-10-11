@@ -1,4 +1,6 @@
 function showView(view) {
+    el.accountMenu.hidden = true;
+    el.accountMenuButton.setAttribute("aria-expanded", "false");
 
     el.appShell.classList.remove(
     "app-shell--guide",
@@ -26,6 +28,7 @@ function showView(view) {
         // leaderBoard.hidden = true;
         el.appHeader.hidden = false;
         el.mapColumn.hidden = false;
+        requestAnimationFrame(() => map?.resize());
         el.detailPanel.hidden = true;
         el.filtersPanel.hidden = true;
     }
@@ -52,3 +55,7 @@ el.mapViewButton.addEventListener("click", () => {
     showView("map");
 });
 
+
+document.querySelector("#map-back-to-guide").addEventListener("click", () => {
+    showView("guide");
+});
