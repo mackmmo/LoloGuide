@@ -54,6 +54,8 @@ async function openAccountView(view) {
   el.accountMenu.hidden = true;
   el.accountMenuButton.setAttribute("aria-expanded", "false");
   el.accountModal.hidden = false;
+  el.accountModal.dataset.accountView = view;
+  syncBottomNavigation();
   if (view === "profile") {
     el.accountModalTitle.textContent = "Profile";
     el.accountModalBody.innerHTML = `<p class="muted">Loading profile…</p>`;
@@ -64,7 +66,7 @@ async function openAccountView(view) {
     const permissions = result.data.data_permissions || {};
     document.querySelector("#password-form").insertAdjacentHTML("beforebegin", `
       <section class="data-permissions"><h3>Data permissions</h3>
-        <label><input type="checkbox" data-publication="publish_feed" ${permissions.publish_feed ? "checked" : ""}><span>Publish my sends to the feed</span></label>
+        <label><input type="checkbox" data-publication="publish_feed" ${permissions.publish_feed ? "checked" : ""}><span>Publish my sends to Community</span></label>
         <label><input type="checkbox" data-publication="publish_leaderboards" ${permissions.publish_leaderboards ? "checked" : ""}><span>Include my sends in leaderboards and Junts Hall of Fame</span></label>
         <p class="muted">Turning a setting off removes your published entries from that view. Your private Log Book is kept. Private beta is never published.</p>
         <p id="publication-message" role="status"></p>
@@ -305,8 +307,8 @@ function bindAuthEvents() {
     el.accountMenuButton.setAttribute("aria-expanded", String(!el.accountMenu.hidden));
   });
   el.accountMenu.querySelectorAll("[data-account-view]").forEach((button) => button.addEventListener("click", () => openAccountView(button.dataset.accountView)));
-  el.accountModalClose.addEventListener("click", () => { el.accountModal.hidden = true; });
-  el.accountModal.addEventListener("click", (event) => { if (event.target === el.accountModal) el.accountModal.hidden = true; });
+  el.accountModalClose.addEventListener("click", () => { el.accountModal.hidden = true; syncBottomNavigation(); });
+  el.accountModal.addEventListener("click", (event) => { if (event.target === el.accountModal) { el.accountModal.hidden = true; syncBottomNavigation(); } });
   document.addEventListener("click", (event) => { if (!event.target.closest(".account-menu-wrap")) { el.accountMenu.hidden = true; el.accountMenuButton.setAttribute("aria-expanded", "false"); } });
 
   el.logoutButton.addEventListener("click", () => {

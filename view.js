@@ -1,4 +1,17 @@
+function syncBottomNavigation() {
+    let active = el.appShell.classList.contains("app-shell--map") ? "map"
+        : el.appShell.classList.contains("app-shell--community") ? "community" : "guide";
+    if (!el.accountModal.hidden && el.accountModal.dataset.accountView === "logbook") active = "logbook";
+    document.querySelectorAll("[data-bottom-nav]").forEach(button => {
+        const selected = button.dataset.bottomNav === active;
+        button.classList.toggle("is-active", selected);
+        if (selected) button.setAttribute("aria-current", "page");
+        else button.removeAttribute("aria-current");
+    });
+}
+
 function showView(view) {
+    el.accountModal.hidden = true;
     el.accountMenu.hidden = true;
     el.accountMenuButton.setAttribute("aria-expanded", "false");
 
@@ -45,6 +58,7 @@ function showView(view) {
         el.filtersPanel.hidden = false;
     }
 
+    syncBottomNavigation();
 }
 
 el.guideViewButton.addEventListener("click", () => {
@@ -59,3 +73,10 @@ el.mapViewButton.addEventListener("click", () => {
 document.querySelector("#map-back-to-guide").addEventListener("click", () => {
     showView("guide");
 });
+
+document.querySelectorAll("[data-bottom-nav]").forEach(button => button.addEventListener("click", () => {
+    const view = button.dataset.bottomNav;
+    if (view === "logbook") openAccountView("logbook");
+    else if (view === "community") el.communityFeedButton.click();
+    else showView(view);
+}));

@@ -11,7 +11,7 @@
   gtag('config', 'G-SC0BX40GQG');
 </script>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Lolo Climbing Explorer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -23,7 +23,7 @@
       href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=99" />
+    <link rel="stylesheet" href="./styles.css?v=101" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-BYGF2CWJ49"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -103,10 +103,10 @@
 
             <div id="account-menu" class="account-menu" hidden>
               <button type="button" data-account-view="profile">Profile</button>
-              <button type="button" data-account-view="logbook">Logbook</button>
-              <button id="guide-view">Guide</button>
-              <button id="map-view">Map</button>
-              <button id="community-feed-button">Feed</button>
+              <button type="button" class="desktop-primary-nav" data-account-view="logbook">Logbook</button>
+              <button id="guide-view" class="desktop-primary-nav">Guide</button>
+              <button id="map-view" class="desktop-primary-nav">Map</button>
+              <button id="community-feed-button" class="desktop-primary-nav">Community</button>
               <button id="logout-button" type="button">Log out</button>
               
             </div>
@@ -115,14 +115,14 @@
             
       <section id="community-feed-page" hidden>
         <div class="community-tabs" role="tablist" aria-label="Community">
-          <button type="button" role="tab" aria-selected="true" data-community-tab="feed" class="is-active">Feed</button>
+          <button type="button" role="tab" aria-selected="true" data-community-tab="feed" class="is-active">Community</button>
           <button type="button" role="tab" aria-selected="false" data-community-tab="leaderboard">Leaderboards</button>
           <button type="button" role="tab" aria-selected="false" data-community-tab="hall">Junts Hall of Fame</button>
         </div>
         <button id="community-refresh" type="button" class="ghost" aria-label="Refresh community feed and standings">↻ Refresh</button>
         <section id="community-sends-panel">
         <div class="community-feed-heading">
-          <h1>Feed</h1>
+          <h1>Community</h1>
           <label class="community-date-filter" for="community-date-filter">
             <span>Date range</span>
             <select id="community-date-filter">
@@ -271,6 +271,7 @@
 
 
 
+      <nav id="bottom-nav" class="bottom-nav" aria-label="Main navigation"><button type="button" data-bottom-nav="guide"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h7l2 2 2-2h7v16h-7l-2 2-2-2H3z"/><path d="M12 6v16"/></svg><span>Guide</span></button><button type="button" data-bottom-nav="map"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2z"/><path d="M9 3v16M15 5v16"/></svg><span>Map</span></button><button type="button" data-bottom-nav="community"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M17 4a3 3 0 0 1 0 6M21 21v-3a6 6 0 0 0-3-5"/></svg><span>Community</span></button><button type="button" data-bottom-nav="logbook"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="15" height="18" rx="2"/><path d="M3 7h4M3 12h4M3 17h4M10 8h6M10 12h6M10 16h4"/></svg><span>Log Book</span></button></nav>
     </main>
 
 
@@ -284,14 +285,14 @@
 
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
     <script src="./dom.js?v=70"></script>
-    <script src="./view.js?v=6"></script>
+    <script src="./view.js?v=7"></script>
     <script src="./state.js?v=70"></script>
     <script src="./utils/utils.js?v=68"></script>
     <script src="./api.js?v=72"></script>
     <script src="./events.js?v=71"></script>
     <script src="./map.js?v=79"></script>
     <script src="./render.js?v=78"></script>
-    <script src="./app.js?v=76"></script>
-    <script src="./community.js?v=96"></script>
+    <script src="./app.js?v=77"></script>
+    <script src="./community.js?v=97"></script>
   </body>
 </html>
