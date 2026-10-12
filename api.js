@@ -323,3 +323,5 @@ const updateCompetitionSend = (id, payload) => apiRequest(`/api/competition-send
 const deleteCompetitionSend = id => apiRequest(`/api/competition-sends/${id}/`, {method: "DELETE"});
 const getLeaderboard = (board, year) => apiRequest(`/api/leaderboards/?board=${encodeURIComponent(board)}&year=${encodeURIComponent(year)}`);
 const getHallOfFame = () => apiRequest("/api/hall-of-fame/");
+
+const updateUsername = username => apiRequest("/api/profile/", {method:"PATCH", body:JSON.stringify({username})});

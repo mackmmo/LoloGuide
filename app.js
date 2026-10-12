@@ -63,6 +63,30 @@ async function openAccountView(view) {
     if (!result.ok) { el.accountModalBody.textContent = String(result.error); return; }
     state.profile = result.data;
     el.accountModalBody.innerHTML = `<div class="profile-summary"><strong>${escapeHtml(result.data.username || "")}</strong><span>${escapeHtml(result.data.email || "")}</span></div><form id="password-form" class="account-form"><h3>Change password</h3><label><span>Current password</span><input name="current_password" type="password" required></label><label><span>New password</span><input name="new_password" type="password" required></label><button class="auth-primary" type="submit">Change password</button><p id="password-message" class="route-log-message"></p></form>`;
+    el.accountModalBody.querySelector(".profile-summary").insertAdjacentHTML("afterend", `
+      <form id="username-form" class="account-form"><h3>Change username</h3>
+        <label><span>Username</span><input name="username" autocomplete="username" maxlength="150" required value="${escapeHtml(result.data.username || "")}"></label>
+        <p class="muted">Use your new username the next time you log in.</p>
+        <button type="submit" class="auth-primary">Save username</button>
+        <p id="username-message" class="route-log-message" role="status"></p>
+      </form>`);
+    const usernameForm = el.accountModalBody.querySelector("#username-form");
+    usernameForm.addEventListener("submit", async event => {
+      event.preventDefault();
+      const button = usernameForm.querySelector("button");
+      const message = usernameForm.querySelector("#username-message");
+      button.disabled = true;
+      message.textContent = "Saving…";
+      try {
+        const saved = await updateUsername(usernameForm.elements.username.value.trim());
+        if (!saved.ok) { message.textContent = String(saved.error); return; }
+        state.profile = saved.data;
+        usernameForm.elements.username.value = saved.data.username;
+        el.accountModalBody.querySelector(".profile-summary strong").textContent = saved.data.username;
+        message.textContent = "Username saved. Use it the next time you log in.";
+        if (typeof refreshCommunityView === "function") refreshCommunityView();
+      } finally { button.disabled = false; }
+    });
     const permissions = result.data.data_permissions || {};
     document.querySelector("#password-form").insertAdjacentHTML("beforebegin", `
       <section class="data-permissions"><h3>Data permissions</h3>

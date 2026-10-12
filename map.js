@@ -379,7 +379,7 @@ if (!map.__areasPopupBound && map.getLayer("areas-hit")) {
     });
 
     floatingAreaPopup?.remove();
-    const popup = floatingAreaPopup = new maplibregl.Popup({
+    const popup = floatingAreaPopup = new maplibregl.Popup({ anchor: "bottom", className: "area-map-popup",
       closeButton: true,
       closeOnClick: true,
       maxWidth: "320px"
@@ -417,12 +417,12 @@ if (!map.__areaLabelsClickBound && map.getLayer("area-labels")) {
     });
 
     floatingAreaPopup?.remove();
-    floatingAreaPopup = new maplibregl.Popup({ closeButton: true, closeOnClick: true, maxWidth: "320px" })
+    const popup = floatingAreaPopup = new maplibregl.Popup({ anchor: "bottom", className: "area-map-popup", closeButton: true, closeOnClick: true, maxWidth: "320px" })
       .setLngLat(event.lngLat)
       .setHTML(buildAreaPopupHtml(area))
       .addTo(map);
     highlightArea(areaId);
-    bindAreaPopupActions(floatingAreaPopup, areaId);
+    bindAreaPopupActions(popup, areaId);
   });
 
   map.__areaLabelsClickBound = true;
@@ -462,6 +462,7 @@ function buildAreaPopupHtml(area) {
         <span><strong>Aspect</strong> ${escapeHtml(area.aspect || "-")}</span>
       </div>
       ${typeSummary ? `<p class="map-popup-summary">${escapeHtml(typeSummary)}</p>` : ""}
+      ${buildCoordinateSection(area)}
       <button class="map-popup-action" type="button" data-area-id="${escapeHtml(String(area.area_id || ""))}">
         See Area
       </button>
@@ -470,11 +471,14 @@ function buildAreaPopupHtml(area) {
 }
 
 function bindAreaPopupActions(popup, areaId) {
+  if (!popup?.getElement) return;
+  keepAreaPopupVisible(popup);
   const popupElement = popup.getElement();
   if (!popupElement) {
     return;
   }
 
+  bindCoordinateCopy(popupElement);
   const button = popupElement.querySelector("[data-area-id]");
   if (!button) {
     return;
@@ -740,10 +744,6 @@ function terrainOverviewZoom(desiredZoom = map.getZoom()) {
 
 function renderFloatingAreaPins() {
   if (!map || !mapStyleReady) return;
-  if (mapDimension !== "3d" && floatingAreaPopup) {
-    floatingAreaPopup.remove();
-    floatingAreaPopup = null;
-  }
   const visibleAreas = mapDimension === "3d" ? state.datasets.areas : [];
   const activeIds = new Set();
   visibleAreas.forEach(area => {
@@ -771,12 +771,12 @@ function renderFloatingAreaPins() {
         const currentPoint = currentArea && parsePoint(currentArea.centroid);
         if (!currentPoint) return;
         floatingAreaPopup?.remove();
-        floatingAreaPopup = new maplibregl.Popup({ closeButton: true, closeOnClick: true, maxWidth: "320px", offset: [0, -66] })
+        const popup = floatingAreaPopup = new maplibregl.Popup({ anchor: "bottom", className: "area-map-popup", closeButton: true, closeOnClick: true, maxWidth: "320px", offset: [0, -66] })
           .setLngLat([currentPoint[1], currentPoint[0]])
           .setHTML(buildAreaPopupHtml(currentArea))
           .addTo(map);
         highlightArea(id);
-        bindAreaPopupActions(floatingAreaPopup, id);
+        bindAreaPopupActions(popup, id);
       });
       const marker = new maplibregl.Marker({ element, anchor: "bottom", offset: [0, 4], pitchAlignment: "viewport", rotationAlignment: "viewport" });
       pin = { marker, element, button };
@@ -917,4 +917,35 @@ async function searchMapRecords(version) {
   }).slice(0, 12);
   results.innerHTML = mapSearchMatches.length ? mapSearchMatches.map((match, index) => '<button type="button" class="map-search-result" data-map-search-index="' + index + '"><strong>' + escapeHtml(match.record.name || "Unnamed") + '</strong><span>' + match.label + (match.record.grade ? " · " + escapeHtml(match.record.grade) : "") + '</span></button>').join("") : response.ok ? '<p class="muted">No mapped areas or routes found.</p>' : '<p class="muted">Unable to search routes. Try again.</p>';
   if (!response.ok && mapSearchMatches.length) results.innerHTML += '<p class="muted">Route search unavailable. Showing areas and subareas.</p>';
+}
+
+function keepAreaPopupVisible(popup, remainingPans = 2) {
+  if (!popup?.getElement || !map?.getContainer || !map.panBy) return;
+  requestAnimationFrame(() => {
+    const element = popup.getElement();
+    if (!element || element.isConnected === false) return;
+    const container = map.getContainer();
+    const bounds = container.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
+    const toolbar = container.querySelector(".map-tools") || container.parentElement?.querySelector(".map-tools");
+    const toolbarWidth = toolbar && toolbar.getBoundingClientRect().width;
+    const rightInset = toolbarWidth ? toolbarWidth + 24 : 16;
+    const width = Math.min(280, Math.max(160, bounds.width - rightInset - 16));
+    const content = element.querySelector(".maplibregl-popup-content");
+    element.style.maxWidth = `${width}px`;
+    if (content) content.style.maxHeight = "none";
+    element.classList.toggle("area-map-popup--short", bounds.height < 450);
+    element.classList.toggle("area-map-popup--tiny", bounds.height < 300);
+    const box = element.getBoundingClientRect();
+    const left = bounds.left + 16;
+    const right = bounds.right - rightInset;
+    const top = bounds.top + 16;
+    const bottom = bounds.bottom - 28;
+    const dx = box.left < left ? box.left - left : box.right > right ? box.right - right : 0;
+    const dy = box.top < top ? box.top - top : box.bottom > bottom ? box.bottom - bottom : 0;
+    if (remainingPans > 0 && (Math.abs(dx) > 1 || Math.abs(dy) > 1)) {
+      map.once?.("moveend", () => keepAreaPopupVisible(popup, remainingPans - 1));
+      map.panBy([dx, dy], { duration: 350 });
+    }
+  });
 }

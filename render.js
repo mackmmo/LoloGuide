@@ -223,23 +223,14 @@ function renderDetail() {
   const { record, mode } = current;
 
 if (mode === "routes") {
-  const todo = existingTodo(record.route_id);
-
   el.detailTitle.innerHTML = `
     <button class="mobile-back-to-routes" type="button">
       ← Routes
     </button>
 
     <span class="route-title-row">
-      <span>${escapeHtml(recordTitle(record))}</span>
-
-      <button
-        id="route-todo-toggle"
-        class="route-todo-toggle ${todo ? "is-added" : ""}"
-        type="button"
-        aria-label="${todo ? "Remove from To-Do" : "Add to To-Do"}"
-        title="${todo ? "Remove from To-Do" : "Add to To-Do"}"
-      >${todo ? "✓" : "+"}</button>
+      <span class="route-name-text">${escapeHtml(recordTitle(record))}</span>
+      ${buildCoordinateSection(record, true)}
     </span>`;
 } else {
   el.detailTitle.innerHTML = `<button class="mobile-back-to-routes" type="button">← Browse routes</button><span>${escapeHtml(recordTitle(record))}</span>`;
@@ -265,7 +256,6 @@ el.detailSubtitle.innerHTML = buildDetailNav(record, mode);
         <button type="button" class="route-detail-tab ${state.detailTab === "community" ? "is-active" : ""}" data-detail-tab="community">Community</button>
       </div>`;
     bindRouteDetailTabs(record);
-    bindTodoToggle(record);
 
     if (state.detailTab === "community") {
       renderCommunityPanel(record);
@@ -290,6 +280,8 @@ el.detailSubtitle.innerHTML = buildDetailNav(record, mode);
   }
 
   el.detailNav.querySelector(".see-on-map")?.addEventListener("click", () => seeDetailOnMap(record, mode));
+  bindCoordinateCopy(el.detailTitle);
+  bindCoordinateCopy(el.detailDescription);
   updateMap(record, mode);
 }
 
@@ -303,6 +295,7 @@ function renderRouteDetailsPanel(record) {
   if (el.detailLog) {
     el.detailLog.innerHTML = buildRouteLogCard(record);
     bindRouteLogCard(record, "routes");
+    bindTodoToggle(record);
   }
 }
 
@@ -530,7 +523,7 @@ function buildDetailDescription(record, mode) {
   }
 
   const description = record.description || "No description available.";
-  return `<strong>Description</strong><p>${escapeHtml(description)}</p>${extra.join("")}`;
+  return `<strong>Description</strong><p>${escapeHtml(description)}</p>${extra.join("")}${mode === "routes" ? "" : buildCoordinateSection(record)}`;
 }
 
 function buildDetailRelated(record, mode) {
@@ -715,13 +708,20 @@ function formatLogSummary(log) {
 }
 
 function buildRouteLogCard(route) {
-  const log = existingRouteLog(route.route_id);
-  return `
-    <div class="route-log-overview route-log-overview--compact">
-      <button id="route-log-open" class="route-log-open route-log-open--compact" type="button">${log ? "Edit Log" : "Log Route"}</button>
-      <button id="route-repeat-open" class="ghost" type="button">Log another send</button>
-      <div class="send-history">${(state.competitionSends || []).filter(x => String(x.route) === String(route.route_id)).map(x => `<div class="send-history-row"><span>${escapeHtml(x.date_sent)} · ${escapeHtml(x.send_style || "sent")}</span><button type="button" class="ghost" data-edit-annual="${Number(x.id)}">Edit send</button></div>`).join("")}</div>
-    </div>`;
+  const todo = existingTodo(route.route_id);
+  const hasSend = existingRouteLog(route.route_id) || routeSendHistory(route).length;
+  return `<div class="route-log-overview route-log-overview--compact">
+    <button id="route-log-open" class="route-log-open route-log-open--compact" type="button">${hasSend ? "Edit Send" : "Add Send"}</button>
+    <button id="route-todo-toggle" class="ghost" type="button" aria-pressed="${Boolean(todo)}">${todo ? "Remove To Do" : "Add to Do"}</button>
+  </div>`;
+}
+
+function routeSendHistory(route) {
+  return (state.competitionSends || []).filter(x => String(x.route) === String(route.route_id)).sort((a,b) => String(b.date_sent).localeCompare(String(a.date_sent)));
+}
+
+function buildSendHistory(route) {
+  return `<div class="send-history">${routeSendHistory(route).map(x => `<div class="send-history-row"><span>${escapeHtml(x.date_sent)} · ${escapeHtml(x.send_style || "sent")}</span><button type="button" class="ghost" data-edit-annual="${Number(x.id)}">Edit send</button></div>`).join("")}</div>`;
 }
 
 function closeRouteLogModal() {
@@ -731,7 +731,7 @@ function closeRouteLogModal() {
 function openRouteLogModal(route, repeatSend = false, annualSend = null) {
   closeRouteLogModal();
   const log = annualSend ? {...annualSend, status: "sent"} : repeatSend ? null : existingRouteLog(route.route_id);
-  const sent = repeatSend || log?.status === "sent";
+  const sent = repeatSend || !log || log?.status === "sent";
   const modal = document.createElement("div");
   modal.id = "route-log-modal";
   modal.className = "route-log-modal";
@@ -742,6 +742,7 @@ function openRouteLogModal(route, repeatSend = false, annualSend = null) {
         <button id="route-log-modal-close" class="route-log-modal-close" type="button" aria-label="Close">×</button>
       </div>
       ${log ? `<p class="route-log-current">${escapeHtml(formatLogSummary(log))}</p>` : ""}
+      ${!repeatSend ? buildSendHistory(route) : ""}
       <form id="route-log-form" class="route-log-form">
         <label><span>Status</span><select name="status" ${repeatSend || annualSend ? "disabled" : ""}><option value="project" ${!sent ? "selected" : ""}>Project</option><option value="sent" ${sent ? "selected" : ""}>Sent</option></select></label>
         <label class="route-log-send-field"><span>Send style</span><select name="send_style"><option value="">—</option>${["onsight","flash","redpoint","pinkpoint"].map(v => `<option value="${v}" ${log?.send_style === v ? "selected" : ""}>${v[0].toUpperCase()+v.slice(1)}</option>`).join("")}</select></label>
@@ -750,10 +751,15 @@ function openRouteLogModal(route, repeatSend = false, annualSend = null) {
         <p class="muted">Date sent is required for leaderboard points. JuntMasters counts a route once in its Date sent year, including backlogged sends. Enable leaderboard publication in Profile to participate.</p>
         <label class="route-log-beta" ${repeatSend || annualSend ? "hidden" : ""}><span>Private beta</span><textarea name="beta" rows="4" placeholder="Your private beta…">${escapeHtml(log?.beta || "")}</textarea></label>
         <div class="route-log-actions"><button class="auth-primary" type="submit">${log ? "Update Log" : "Save Log"}</button>${log ? `<button id="route-log-delete" class="ghost" type="button">Remove</button>` : ""}</div>
+        ${!repeatSend && log ? `<button id="route-repeat-open" class="ghost" type="button">Log another send</button>` : ""}
         <p id="route-log-message" class="route-log-message"></p>
       </form>
     </div>`;
   document.body.appendChild(modal);
+  modal.querySelectorAll("[data-edit-annual]").forEach(button => button.addEventListener("click", () => {
+    const send = routeSendHistory(route).find(x => String(x.id) === button.dataset.editAnnual);
+    if (send) openRouteLogModal(route, false, send);
+  }));
 
   const form = modal.querySelector("#route-log-form");
   const status = form.elements.status;
@@ -772,6 +778,7 @@ function openRouteLogModal(route, repeatSend = false, annualSend = null) {
   syncStatusFields();
 
   modal.querySelector("#route-log-modal-close").addEventListener("click", closeRouteLogModal);
+  modal.querySelector("#route-repeat-open")?.addEventListener("click", () => openRouteLogModal(route, true));
   modal.addEventListener("click", (event) => { if (event.target === modal) closeRouteLogModal(); });
 
   const escapeHandler = (event) => {
@@ -809,12 +816,10 @@ function openRouteLogModal(route, repeatSend = false, annualSend = null) {
 
 function bindRouteLogCard(route, mode) {
   if (mode !== "routes" || !route) return;
-  document.querySelector("#route-log-open")?.addEventListener("click", () => openRouteLogModal(route));
-  document.querySelector("#route-repeat-open")?.addEventListener("click", () => openRouteLogModal(route, true));
-  document.querySelectorAll("[data-edit-annual]").forEach(button => button.addEventListener("click", () => {
-    const send = (state.competitionSends || []).find(x => String(x.id) === button.dataset.editAnnual);
-    if (send) openRouteLogModal(route, false, send);
-  }));
+  document.querySelector("#route-log-open")?.addEventListener("click", () => {
+    const annual = existingRouteLog(route.route_id) ? null : routeSendHistory(route)[0];
+    openRouteLogModal(route, false, annual || null);
+  });
 }
 
 function bindSubareaRouteLinks() {
@@ -827,6 +832,48 @@ function bindSubareaRouteLinks() {
       showMobileGuidePanel("detail");
       renderDetail();
       renderList();
+    });
+  });
+}
+
+function buildCoordinateSection(record, compact = false) {
+  const point = parsePoint(record.centroid);
+  if (!point || !point.every(Number.isFinite) || Math.abs(point[0]) > 90 || Math.abs(point[1]) > 180) return "";
+  const coordinates = `${point[0].toFixed(6)}, ${point[1].toFixed(6)}`;
+  if (compact) return `<span class="guide-coordinates route-title-coordinates">
+    <span class="guide-coordinate-actions"><span class="coordinate-value" tabindex="0" aria-label="Route latitude and longitude" title="Lat/Lon">${escapeHtml(coordinates)}</span><button type="button" class="ghost" data-copy-coordinates aria-label="Copy route coordinates">Copy</button></span>
+    <span class="coordinate-copy-status" role="status" aria-live="polite"></span></span>`;
+  return `<section class="guide-coordinates" aria-label="Coordinates"><h3>Lat/Lon</h3>
+    <div class="guide-coordinate-actions"><span class="coordinate-value" tabindex="0" aria-label="Latitude and longitude">${escapeHtml(coordinates)}</span><button type="button" class="ghost" data-copy-coordinates>Copy</button></div>
+    <p class="coordinate-copy-status" role="status" aria-live="polite"></p></section>`;
+}
+
+function bindCoordinateCopy(container) {
+  container.querySelectorAll("[data-copy-coordinates]").forEach(button => {
+    const section = button.closest(".guide-coordinates");
+    const value = section.querySelector(".coordinate-value");
+    const selectCoordinates = () => {
+      value.focus();
+      const range = document.createRange();
+      range.selectNodeContents(value);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+    };
+    const status = section.querySelector(".coordinate-copy-status");
+    value.addEventListener("click", selectCoordinates);
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+        await navigator.clipboard.writeText(value.textContent);
+        status.textContent = "Coordinates copied.";
+      } catch {
+        selectCoordinates();
+        let copied = false;
+        try { copied = document.execCommand("copy"); } catch {}
+        status.textContent = copied ? "Coordinates copied." : "Select and copy the coordinates above.";
+      } finally { button.disabled = false; }
     });
   });
 }
