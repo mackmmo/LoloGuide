@@ -78,13 +78,24 @@ async function openAccountView(view) {
       button.disabled = true;
       message.textContent = "Saving…";
       try {
-        const saved = await updateUsername(usernameForm.elements.username.value.trim());
+        const previousUsername = state.profile?.username;
+        const requestedUsername = usernameForm.elements.username.value.trim();
+        const saved = await updateUsername(requestedUsername);
         if (!saved.ok) { message.textContent = String(saved.error); return; }
-        state.profile = saved.data;
+        if (saved.data?.username !== requestedUsername) {
+          message.textContent = "The server did not save your new username. Your entry is kept; please try again later.";
+          return;
+        }
+        const confirmed = await getProfile();
+        if (!confirmed.ok || confirmed.data?.username !== requestedUsername) {
+          message.textContent = "Could not verify your saved username. Your entry is kept; please try again.";
+          return;
+        }
+        state.profile = confirmed.data;
         usernameForm.elements.username.value = saved.data.username;
         el.accountModalBody.querySelector(".profile-summary strong").textContent = saved.data.username;
         message.textContent = "Username saved. Use it the next time you log in.";
-        if (typeof refreshCommunityView === "function") refreshCommunityView();
+        await refreshCommunityAfterUsernameChange(previousUsername, confirmed.data.username);
       } finally { button.disabled = false; }
     });
     const permissions = result.data.data_permissions || {};
@@ -365,3 +376,21 @@ function init() {
 }
 
 init();
+
+async function refreshCommunityAfterUsernameChange(previousUsername, username) {
+  // Invalidate responses started before the username was saved.
+  state.communityRequest = (state.communityRequest || 0) + 1;
+  if (state.community?.comments) {
+    state.community.comments = state.community.comments.map(comment =>
+      comment.username === previousUsername ? {...comment, username} : comment);
+  }
+  const requests = [];
+  if (typeof refreshCommunityView === "function") requests.push(refreshCommunityView());
+  const current = currentDetailRecord();
+  if (current?.mode === "routes" && state.detailTab === "community") {
+    requests.push(loadCommunity(current.record.route_id));
+  } else if (state.community) {
+    state.community.loading = false;
+  }
+  await Promise.allSettled(requests);
+}

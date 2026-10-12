@@ -478,6 +478,12 @@ function bindAreaPopupActions(popup, areaId) {
     return;
   }
 
+  if (typeof ResizeObserver !== "undefined" && popup.on) {
+    const observer = new ResizeObserver(() => keepAreaPopupVisible(popup));
+    observer.observe(popupElement);
+    observer.observe(map.getContainer());
+    popup.on("close", () => observer.disconnect());
+  }
   bindCoordinateCopy(popupElement);
   const button = popupElement.querySelector("[data-area-id]");
   if (!button) {
@@ -919,33 +925,51 @@ async function searchMapRecords(version) {
   if (!response.ok && mapSearchMatches.length) results.innerHTML += '<p class="muted">Route search unavailable. Showing areas and subareas.</p>';
 }
 
-function keepAreaPopupVisible(popup, remainingPans = 2) {
+const popupVisibilityJobs = new WeakMap();
+
+function keepAreaPopupVisible(popup, remainingPans = 6) {
   if (!popup?.getElement || !map?.getContainer || !map.panBy) return;
-  requestAnimationFrame(() => {
+  let job = popupVisibilityJobs.get(popup);
+  if (!job) { job = { pending: false, moving: false }; popupVisibilityJobs.set(popup, job); }
+  if (job.pending || job.moving) return;
+  job.pending = true;
+  // Wait for MapLibre's positioning and the browser's text layout to finish.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    job.pending = false;
     const element = popup.getElement();
     if (!element || element.isConnected === false) return;
+    if (map.isMoving?.()) {
+      job.moving = true;
+      map.once("moveend", () => { job.moving = false; keepAreaPopupVisible(popup, remainingPans); });
+      return;
+    }
     const container = map.getContainer();
     const bounds = container.getBoundingClientRect();
-    if (!bounds.width || !bounds.height) return;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const nav = document.querySelector("#bottom-nav");
+    const navBox = nav?.getBoundingClientRect();
+    const screenBottom = navBox?.height && navBox.top < bounds.bottom ? navBox.top : viewportHeight;
     const toolbar = container.querySelector(".map-tools") || container.parentElement?.querySelector(".map-tools");
-    const toolbarWidth = toolbar && toolbar.getBoundingClientRect().width;
-    const rightInset = toolbarWidth ? toolbarWidth + 24 : 16;
-    const width = Math.min(280, Math.max(160, bounds.width - rightInset - 16));
+    const toolbarWidth = toolbar?.getBoundingClientRect().width || 0;
+    const left = Math.max(bounds.left, 0) + 12;
+    const right = Math.min(bounds.right, viewportWidth) - (toolbarWidth ? toolbarWidth + 20 : 12);
+    const top = Math.max(bounds.top, 0) + 12;
+    const bottom = Math.min(bounds.bottom, viewportHeight, screenBottom) - 24;
+    const height = bottom - top;
+    if (right <= left || height <= 0) return;
+    element.style.maxWidth = `${Math.min(280, right - left)}px`;
     const content = element.querySelector(".maplibregl-popup-content");
-    element.style.maxWidth = `${width}px`;
     if (content) content.style.maxHeight = "none";
-    element.classList.toggle("area-map-popup--short", bounds.height < 450);
-    element.classList.toggle("area-map-popup--tiny", bounds.height < 300);
+    element.classList.toggle("area-map-popup--short", height < 450);
+    element.classList.toggle("area-map-popup--tiny", height < 300);
     const box = element.getBoundingClientRect();
-    const left = bounds.left + 16;
-    const right = bounds.right - rightInset;
-    const top = bounds.top + 16;
-    const bottom = bounds.bottom - 28;
     const dx = box.left < left ? box.left - left : box.right > right ? box.right - right : 0;
     const dy = box.top < top ? box.top - top : box.bottom > bottom ? box.bottom - bottom : 0;
     if (remainingPans > 0 && (Math.abs(dx) > 1 || Math.abs(dy) > 1)) {
-      map.once?.("moveend", () => keepAreaPopupVisible(popup, remainingPans - 1));
-      map.panBy([dx, dy], { duration: 350 });
+      job.moving = true;
+      map.once("moveend", () => { job.moving = false; keepAreaPopupVisible(popup, remainingPans - 1); });
+      map.panBy([dx, dy], { duration: 250 });
     }
-  });
+  }));
 }

@@ -64,9 +64,9 @@ const competitionYear = () => Number(new Intl.DateTimeFormat("en-US", {timeZone:
 document.querySelector("#leaderboard-year").value = competitionYear();
 document.querySelector("#leaderboard-year").max = competitionYear();
 
-function renderStandings(entries) {
+function renderStandings(entries, board = null, year = null) {
   if (!entries.length) return '<p class="muted">No eligible published sends yet. Enable leaderboard sharing in Profile to include your dated sends.</p>';
-  return `<table class="leaderboard-table"><thead><tr><th>Rank</th><th>Climber</th><th>Points</th><th>Routes</th></tr></thead><tbody>${entries.map(x => `<tr><td>${Number(x.rank)}</td><td>${escapeHtml(x.username)}</td><td>${Number(x.points)}</td><td>${Number(x.route_count)}</td></tr>`).join("")}</tbody></table>`;
+  return `<table class="leaderboard-table"><thead><tr><th>Rank</th><th>Climber</th><th>Points</th><th>Routes</th></tr></thead><tbody>${entries.map(x => `<tr><td>${Number(x.rank)}</td><td>${board && x.user_id ? `<button type="button" class="leaderboard-climber-link" data-leaderboard-user="${Number(x.user_id)}" data-leaderboard-board="${escapeHtml(board)}" data-leaderboard-year="${Number(year)}">${escapeHtml(x.username)}</button>` : escapeHtml(x.username)}</td><td>${Number(x.points)}</td><td>${Number(x.route_count)}</td></tr>`).join("")}</tbody></table>`;
 }
 
 async function refreshCommunityView() {
@@ -101,7 +101,7 @@ async function refreshCommunityView() {
   if (communityTab === "feed") {
     communityAscents = Array.isArray(result.data) ? result.data : (result.data?.results || []);
     renderCommunityFeed();
-  } else if (communityTab === "leaderboard") target.innerHTML = renderStandings(result.data.entries || []);
+  } else if (communityTab === "leaderboard") target.innerHTML = renderStandings(result.data.entries || [], result.data.board || document.querySelector("#leaderboard-board").value, result.data.year || document.querySelector("#leaderboard-year").value);
   else {
     const seasons = (result.data.seasons || []).filter(season => season.year >= 2026 && season.year < competitionYear());
     target.innerHTML = seasons.length ? seasons.map(season => `<article class="hall-season"><h2>${Number(season.year)} JuntMasters</h2>${season.winners.length ? renderStandings(season.winners) : '<p class="muted">No published winner.</p>'}</article>`).join("") : '<p class="muted">The first JuntMasters season is 2026. Winners will appear after the season ends.</p>';
@@ -112,7 +112,7 @@ el.communityFeedButton.addEventListener("click", () => { showView("community"); 
 document.querySelectorAll("[data-community-tab]").forEach(button => button.addEventListener("click", () => { communityTab = button.dataset.communityTab; refreshCommunityView(); }));
 ["leaderboard-board", "leaderboard-year"].forEach(id => document.getElementById(id).addEventListener("change", refreshCommunityView));
 
-document.querySelector("#community-feed")?.addEventListener("click", async event => {
+document.querySelector("#community-feed-page")?.addEventListener("click", async event => {
   const button = event.target.closest("[data-feed-route-id]");
   if (!button || button.disabled) return;
   button.disabled = true;
@@ -134,4 +134,28 @@ communityRefreshButton.addEventListener("click", async () => {
     communityRefreshButton.disabled = false;
     communityRefreshButton.textContent = "↻ Refresh";
   }
+});
+
+document.querySelector("#leaderboard-results").addEventListener("click", async event => {
+  if (event.target.closest("[data-back-leaderboard]")) { refreshCommunityView(); return; }
+  const button = event.target.closest("[data-leaderboard-user]");
+  if (!button || button.disabled) return;
+  const request = ++communityRequest;
+  const board = button.dataset.leaderboardBoard;
+  const year = button.dataset.leaderboardYear;
+  const target = document.querySelector("#leaderboard-results");
+  target.innerHTML = '<p class="muted">Loading scored routes…</p>';
+  const result = await getLeaderboardRoutes(button.dataset.leaderboardUser, board, year);
+  if (request !== communityRequest) return;
+  const back = '<button type="button" class="ghost" data-back-leaderboard>← Leaderboard</button>';
+  if (!result.ok) { target.innerHTML = back + `<p role="status">${escapeHtml(String(result.error))}</p>`; return; }
+  const data = result.data;
+  const routes = data.routes || [];
+  target.innerHTML = `${back}<h2>${escapeHtml(data.username)}’s routes</h2>
+    <p class="muted">${board === "juntmasters" ? `JuntMasters ${Number(year)}` : "All-Time"} · ${Number(data.points)} points · ${Number(data.route_count)} routes</p>
+    <div class="leaderboard-route-list">${routes.length ? routes.map(route => `<article class="leaderboard-route-card">
+      <button type="button" class="feed-route-link" data-feed-route-id="${Number(route.route_id)}" data-feed-route-name="${escapeHtml(route.route_name)}">${escapeHtml(route.route_name)}</button>
+      <span>${escapeHtml(route.grade || "")} · ${Number(route.points)} points</span>
+      <small>${escapeHtml(route.date_sent || "")} · ${escapeHtml(route.send_style || "sent")}</small>
+    </article>`).join("") : '<p class="muted">No scored route details available.</p>'}</div>`;
 });

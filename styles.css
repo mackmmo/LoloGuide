@@ -435,3 +435,14 @@ button,input,select,textarea { font-family:var(--heading-font); }
 .area-map-popup--tiny .map-popup-description,.area-map-popup--tiny .map-popup-facts { display:none; }
 .area-map-popup--tiny .maplibregl-popup-content { padding:8px 12px; }
 .area-map-popup--tiny .guide-coordinates { margin-top:6px; padding-top:6px; }
+
+/* Keep touch keyboards from triggering input focus zoom. */
+@media(max-width:1199px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea { font-size:16px; }
+  .filter-grid input,.filter-grid select,#map-search-input { font-size:16px; }
+}
+
+.leaderboard-climber-link { padding:0; border:0; background:none; color:var(--accent); text-align:left; text-decoration:underline; font:inherit; cursor:pointer; }
+.leaderboard-route-list { display:grid; gap:10px; }
+.leaderboard-route-card { display:grid; gap:6px; padding:12px; border:1px solid var(--border); border-radius:10px; background:var(--surface); }
+.leaderboard-route-card small { color:var(--muted); }

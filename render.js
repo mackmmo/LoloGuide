@@ -327,6 +327,7 @@ function bindRouteDetailTabs(route) {
 }
 
 async function loadCommunity(routeId) {
+  const request = state.communityRequest = (state.communityRequest || 0) + 1;
   state.community = { routeId, loading: true, stats: null, comments: [], error: "" };
   renderCommunityPanel(currentDetailRecord()?.record);
 
@@ -335,7 +336,7 @@ async function loadCommunity(routeId) {
     getRouteComments(routeId)
   ]);
 
-  if (String(currentDetailRecord()?.record?.route_id) !== String(routeId)) return;
+  if (request !== state.communityRequest || String(currentDetailRecord()?.record?.route_id) !== String(routeId)) return;
 
   state.community = {
     routeId,
@@ -745,7 +746,7 @@ function openRouteLogModal(route, repeatSend = false, annualSend = null) {
       ${!repeatSend ? buildSendHistory(route) : ""}
       <form id="route-log-form" class="route-log-form">
         <label><span>Status</span><select name="status" ${repeatSend || annualSend ? "disabled" : ""}><option value="project" ${!sent ? "selected" : ""}>Project</option><option value="sent" ${sent ? "selected" : ""}>Sent</option></select></label>
-        <label class="route-log-send-field"><span>Send style</span><select name="send_style"><option value="">—</option>${["onsight","flash","redpoint","pinkpoint"].map(v => `<option value="${v}" ${log?.send_style === v ? "selected" : ""}>${v[0].toUpperCase()+v.slice(1)}</option>`).join("")}</select></label>
+        <label class="route-log-send-field"><span>Send style</span><select name="send_style"><option value="">—</option>${["onsight","flash","redpoint","pinkpoint","repeat"].map(v => `<option value="${v}" ${log?.send_style === v ? "selected" : ""}>${v[0].toUpperCase()+v.slice(1)}</option>`).join("")}</select></label>
         <label ${repeatSend || annualSend ? "hidden" : ""}><span>Attempts</span><input name="attempts" type="number" min="0" value="${Number(log?.attempts) > 0 ? Number(log.attempts) : ""}" placeholder="Optional" /></label>
         <label class="route-log-date-field"><span>Date sent</span><input name="date_sent" type="date" value="${escapeHtml(log?.date_sent || "")}" ${repeatSend || annualSend ? "required" : ""} /></label>
         <p class="muted">Date sent is required for leaderboard points. JuntMasters counts a route once in its Date sent year, including backlogged sends. Enable leaderboard publication in Profile to participate.</p>
@@ -767,6 +768,7 @@ function openRouteLogModal(route, repeatSend = false, annualSend = null) {
   const dateInput = form.elements.date_sent;
   dateInput.max = new Intl.DateTimeFormat("en-CA", {timeZone:"America/Denver", year:"numeric", month:"2-digit", day:"2-digit"}).format(new Date());
   if (repeatSend) dateInput.value = dateInput.max;
+  if (repeatSend) form.elements.send_style.value = "repeat";
   const sendField = modal.querySelector(".route-log-send-field");
   const dateField = modal.querySelector(".route-log-date-field");
   const syncStatusFields = () => {

@@ -325,3 +325,5 @@ const getLeaderboard = (board, year) => apiRequest(`/api/leaderboards/?board=${e
 const getHallOfFame = () => apiRequest("/api/hall-of-fame/");
 
 const updateUsername = username => apiRequest("/api/profile/", {method:"PATCH", body:JSON.stringify({username})});
+
+const getLeaderboardRoutes = (userId,board,year) => apiRequest(`/api/leaderboards/users/${encodeURIComponent(userId)}/routes/?board=${encodeURIComponent(board)}&year=${encodeURIComponent(year)}`);
