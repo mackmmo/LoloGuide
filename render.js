@@ -205,6 +205,11 @@ function detailSelectionLabel() {
 function renderDetail() {
   const current = currentDetailRecord();
 
+  console.log("Detail render:", {
+    current,
+    detailTab: state.detailTab
+  });
+
   if (!current) {
     document.querySelector(".detail-panel")?.classList.remove("community-mode");
     el.detailDescription.classList.remove("community-full-panel");
@@ -286,12 +291,112 @@ el.detailSubtitle.innerHTML = buildDetailNav(record, mode);
 }
 
 function renderRouteDetailsPanel(record) {
+  const isEditing = state.editor.canEdit && state.editor.enabled;
+  // Name Edits
+  const nameHTML = isEditing
+  ? `<input type="text" id="edit-route-name" value="${escapeHtml(record.name ?? "")}">`
+  : `<span>${escapeHtml(record.name ?? "")}</span>`
+
+  const nameElement = el.detailTitle.querySelector(".route-name-text");
+  
+  if (nameElement) {
+    nameElement.outerHTML = nameHTML;
+  }
+
+  const nameInput = document.querySelector("#edit-route-name");
+
+  // Description Edits
+  const descriptionHTML = isEditing
+  ? `<textarea id="edit-route-description">${escapeHtml(record.description ?? "")}</textarea>`
+  : `<span>${escapeHtml(record.description ?? "")}</span>`;
+
+  el.detailDescription.innerHTML = buildDetailDescription(record, "routes");
+  const descriptionElement = el.detailDescription.querySelector(".route-description-text");
+  
+  if (descriptionElement) {
+    descriptionElement.outerHTML = descriptionHTML;
+  }
+
+  const descriptionInput = document.querySelector("#edit-route-description");
+
+
   document.querySelector(".detail-panel")?.classList.remove("community-mode");
   el.detailDescription.classList.remove("community-full-panel");
 
-  el.detailDescription.innerHTML = buildDetailDescription(record, "routes");
   if (el.detailRelated) el.detailRelated.innerHTML = "";
+
   el.detailFacts.innerHTML = detailFacts(record, "routes").map(renderFact).join("");
+
+  if (isEditing) {
+    el.detailFacts.insertAdjacentHTML(
+      "beforeend",
+      `
+        <button
+          type="button"
+          id="save-route-changes"
+          class="auth-primary"
+        >
+          Save Changes
+        </button>
+      `
+    );
+  }
+
+  const saveButton = document.querySelector("#save-route-changes");
+
+  saveButton?.addEventListener("click", async () => {
+    const nameInput = document.querySelector("#edit-route-name");
+    const descriptionInput = document.querySelector("#edit-route-description");
+    const gradeInput = document.querySelector("#edit-route-grade");
+    const typeInput = document.querySelector("#edit-route-type");
+    const starsInput = document.querySelector("#edit-route-stars");
+    const heightInput = document.querySelector("#edit-route-height");
+    const faInput = document.querySelector("#edit-route-fa");
+    const faYearInput = document.querySelector("#edit-route-fa-year");
+    const proInput = document.querySelector("#edit-route-pro");
+    const dangerRateingInput = document.querySelector("#edit-route-danger");
+  
+    if (!nameInput) return;
+  
+    const updatedName = nameInput.value.trim();
+    const updatedDescription = descriptionInput.value.trim()
+  
+    if (!updatedName) {
+      alert("Route name cannot be empty.");
+      return;
+    }
+  
+    saveButton.disabled = true;
+    saveButton.textContent = "Saving...";
+  
+    try {
+      const result = await updateRoute(record.route_id, {
+        name: updatedName,
+        description: updatedDescription,
+      });
+  
+      if (!result.ok) {
+        console.error("Save failed:", result);
+        alert("Could not save route changes.");
+        return;
+      }
+  
+      record.name = result.data.name;
+      record.description = result.data.description
+      renderDetail();
+  
+      console.log("Route updated successfully:", result.data);
+  
+    } catch (error) {
+      console.error("Save error:", error);
+      alert("An error occurred while saving.");
+  
+    } finally {
+      saveButton.disabled = false;
+      saveButton.textContent = "Save Changes";
+    }
+  });
+
   if (el.detailLog) {
     el.detailLog.innerHTML = buildRouteLogCard(record);
     bindRouteLogCard(record, "routes");
@@ -524,7 +629,7 @@ function buildDetailDescription(record, mode) {
   }
 
   const description = record.description || "No description available.";
-  return `<strong>Description</strong><p>${escapeHtml(description)}</p>${extra.join("")}${mode === "routes" ? "" : buildCoordinateSection(record)}`;
+  return `<strong>Description</strong><p class = "route-description-text">${escapeHtml(description)}</p>${extra.join("")}${mode === "routes" ? "" : buildCoordinateSection(record)}`;
 }
 
 function buildDetailRelated(record, mode) {

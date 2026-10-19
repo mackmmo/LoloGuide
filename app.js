@@ -62,7 +62,65 @@ async function openAccountView(view) {
     const result = await getProfile();
     if (!result.ok) { el.accountModalBody.textContent = String(result.error); return; }
     state.profile = result.data;
-    el.accountModalBody.innerHTML = `<div class="profile-summary"><strong>${escapeHtml(result.data.username || "")}</strong><span>${escapeHtml(result.data.email || "")}</span></div><form id="password-form" class="account-form"><h3>Change password</h3><label><span>Current password</span><input name="current_password" type="password" required></label><label><span>New password</span><input name="new_password" type="password" required></label><button class="auth-primary" type="submit">Change password</button><p id="password-message" class="route-log-message"></p></form>`;
+    el.accountModalBody.innerHTML = 
+    `
+      <div class="profile-summary">
+        <strong>${escapeHtml(result.data.username || "")}</strong>
+          <span>${escapeHtml(result.data.email || "")}</span>
+            </div>
+              <form id="password-form" class="account-form">
+              <h3>Change password</h3>
+                <label>
+                  <span>Current password</span>
+                  <input name="current_password" 
+                  type="password" required>
+                </label>
+                <label>
+                  <span>New password</span>
+                  <input name="new_password" 
+                  type="password" 
+                  required
+                  >
+                </label>
+                  <button class="auth-primary" 
+                  type="submit"
+                  >
+                Change password
+                </button>
+                  <p id="password-message" class="route-log-message">
+                </p>
+              </form>
+      `;
+
+    if (state.editor.canEdit) {
+      const editorToggleHTML = `
+        <label>
+          <input type="checkbox" 
+          id="editor-mode-toggle"
+          ${state.editor.enabled ? "checked" : ""}>
+          Editing Mode
+        </label>
+      `;
+
+    el.accountModalBody.insertAdjacentHTML(
+      "beforeend",
+      editorToggleHTML
+    );
+    const toggle = document.querySelector("#editor-mode-toggle");
+
+    toggle.addEventListener("change", (event) => {
+      console.log("TOGGLE FIRED")
+
+      state.editor.enabled = event.target.checked;
+
+      localStorage.setItem("editingMode", String(state.editor.enabled));
+      console.log("Calling renderDetail()");
+
+      renderDetail();
+    });
+  }
+
+
     el.accountModalBody.querySelector(".profile-summary").insertAdjacentHTML("afterend", `
       <form id="username-form" class="account-form"><h3>Change username</h3>
         <label><span>Username</span><input name="username" autocomplete="username" maxlength="150" required value="${escapeHtml(result.data.username || "")}"></label>
@@ -204,9 +262,13 @@ function showGuide() {
   loadLogbook();
   loadTodos();
   getProfile().then((result) => { if (result.ok) state.profile = result.data; });
-  
-}
+  getEditorStatus().then((result) => {
+    state.editor.canEdit =
+      result.ok && result.data?.is_staff === true;
 
+    renderDetail();
+  });
+}
 function bindAuthEvents() {
   el.loginTab.addEventListener("click", () => showAuthMode("login"));
   el.registerTab.addEventListener("click", () => showAuthMode("register"));
@@ -300,6 +362,12 @@ function bindAuthEvents() {
       return;
     }
     el.loginPassword.value = "";
+
+    const editorResult = await getEditorStatus()
+  
+    state.editor.canEdit = 
+      editorResult.ok && editorResult.data?.is_staff === true;
+
     showGuide();
   });
 

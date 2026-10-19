@@ -45,5 +45,10 @@ const state = {
     stats: null,
     comments: [],
     error: ""
+  },
+  editor: {
+    canEdit: false,
+    enabled: localStorage.getItem("editingMode") === "true",
+    saving: false
   }
 };

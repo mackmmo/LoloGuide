@@ -277,6 +277,7 @@ async function apiRequest(path, options = {}, retryAfterRefresh = true) {
 }
 
 const getProfile = () => apiRequest("/api/profile/");
+const getEditorStatus = () => apiRequest('/api/editor-status/');
 const changePassword = (current_password, new_password) => apiRequest("/api/profile/password/", { method: "POST", body: JSON.stringify({ current_password, new_password }) });
 const getLogbook = () => apiRequest("/api/logbook/");
 const createRouteLog = (payload) => apiRequest("/api/logbook/", { method: "POST", body: JSON.stringify(payload) });
@@ -316,6 +317,14 @@ const deleteRouteComment = (commentId) =>
   apiRequest(`/api/comments/${commentId}/`, {
     method: "DELETE"
   });
+
+const updateRoute = (routeId, changes) => {
+  return apiRequest(`/routes/${routeId}/`, {
+    method: "PATCH",
+    body: JSON.stringify(changes)
+  });
+
+}
 const updateDataPermissions = payload => apiRequest("/api/profile/", {method: "PATCH", body: JSON.stringify(payload)});
 const getCompetitionSends = () => apiRequest("/api/competition-sends/");
 const createCompetitionSend = payload => apiRequest("/api/competition-sends/", {method: "POST", body: JSON.stringify(payload)});
