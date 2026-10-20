@@ -306,7 +306,8 @@ function renderRouteDetailsPanel(record) {
   const nameInput = document.querySelector("#edit-route-name");
 
   // Description Edits
-  const descriptionHTML = isEditing
+    //------------------------------------------------------------------------------------------
+  const descriptionHTML = isEditing                                                            
   ? `<textarea id="edit-route-description">${escapeHtml(record.description ?? "")}</textarea>`
   : `<span>${escapeHtml(record.description ?? "")}</span>`;
 
@@ -318,14 +319,28 @@ function renderRouteDetailsPanel(record) {
   }
 
   const descriptionInput = document.querySelector("#edit-route-description");
-
+  //---------------------------------------------------------------------------------------------
 
   document.querySelector(".detail-panel")?.classList.remove("community-mode");
   el.detailDescription.classList.remove("community-full-panel");
 
   if (el.detailRelated) el.detailRelated.innerHTML = "";
-
+  
   el.detailFacts.innerHTML = detailFacts(record, "routes").map(renderFact).join("");
+
+  // Grade Edits
+  //------------------------------------------------------------------------------------
+  const gradeHTML = isEditing
+  ? `<input type="text" id="edit-route-grade" value="${escapeHtml(record.grade ?? "")}">`
+  : `<span>${escapeHtml(record.grade ?? "")}</span>`
+
+  const gradeElement = el.detailFacts.querySelector(".route-grade-text");
+  console.log("Grade element:", gradeElement);
+  console.log("Editing enabled:", isEditing);
+  if (gradeElement) {
+    gradeElement.outerHTML = gradeHTML;
+  }
+  //------------------------------------------------------------------------------------
 
   if (isEditing) {
     el.detailFacts.insertAdjacentHTML(
@@ -360,6 +375,7 @@ function renderRouteDetailsPanel(record) {
   
     const updatedName = nameInput.value.trim();
     const updatedDescription = descriptionInput.value.trim()
+    const updateGrade = gradeInput.value.trim()
   
     if (!updatedName) {
       alert("Route name cannot be empty.");
@@ -373,6 +389,7 @@ function renderRouteDetailsPanel(record) {
       const result = await updateRoute(record.route_id, {
         name: updatedName,
         description: updatedDescription,
+        grade: updateGrade
       });
   
       if (!result.ok) {
@@ -383,6 +400,7 @@ function renderRouteDetailsPanel(record) {
   
       record.name = result.data.name;
       record.description = result.data.description
+      record.grade = result.data.grade
       renderDetail();
   
       console.log("Route updated successfully:", result.data);
@@ -752,7 +770,12 @@ function routeTypeLabel(value) {
 }
 
 function renderFact([label, value]) {
-  return `<div class="fact-card"><strong>${escapeHtml(label)}</strong><span>${escapeHtml(String(value))}</span></div>`;
+  const factClass = label === "Grade" ? "route-grade-text" : "";
+
+  return `<div class="fact-card">
+            <strong>${escapeHtml(label)}</strong>
+            <span class="${factClass}">${escapeHtml(String(value))}</span>
+          </div>`;
 }
 
 function recordKey(record) {
