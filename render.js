@@ -360,6 +360,7 @@ function renderRouteDetailsPanel(record) {
   const saveButton = document.querySelector("#save-route-changes");
 
   saveButton?.addEventListener("click", async () => {
+    console.log("SAVE BUTTON CLICKED");
     const nameInput = document.querySelector("#edit-route-name");
     const descriptionInput = document.querySelector("#edit-route-description");
     const gradeInput = document.querySelector("#edit-route-grade");
