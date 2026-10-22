@@ -294,6 +294,7 @@ el.detailSubtitle.innerHTML = buildDetailNav(record, mode);
 const ROUTE_EDIT_FIELDS = Object.freeze({
   name: {id: 'edit-route-name', selector: '.route-name-text', label: 'Name', maxLength: 100},
   description: {id: 'edit-route-description', selector: '.route-description-text', label: 'Description', multiline: true},
+  pro: {id: 'edit-route-pro', selector: '.route-pro-text', label: 'Protection', maxLength: 50},
   grade: {id: 'edit-route-grade', selector: '.route-grade-text', label: 'Grade', maxLength: 50},
   type: {id: 'edit-route-type', selector: '.route-type-text', label: 'Type', maxLength: 50},
   star_rating: {id: 'edit-route-stars', selector: '.route-stars-text', label: 'Stars', min: 0, max: 5},
@@ -373,7 +374,7 @@ function renderRouteDetailsPanel(record) {
     el.detailFacts.append(saveButton, cancelButton, message);
     try {
       for (const [field, config] of Object.entries(ROUTE_EDIT_FIELDS)) {
-        const container = field === 'name' ? el.detailTitle : field === 'description' ? el.detailDescription : el.detailFacts;
+        const container = field === 'name' ? el.detailTitle : ['description', 'pro'].includes(field) ? el.detailDescription : el.detailFacts;
         const target = container.querySelector(config.selector);
         if (!target) throw new Error(`Missing ${config.label} placeholder; editing blocked.`);
         const input = document.createElement(config.multiline ? 'textarea' : 'input');
@@ -672,8 +673,8 @@ function buildDetailDescription(record, mode) {
   if (mode === "areas" && record.directions) {
     extra.push(`<p><strong>Directions</strong> ${escapeHtml(record.directions)}</p>`);
   }
-  if (mode === "routes" && record.pro) {
-    extra.push(`<p><strong>Protection</strong> ${escapeHtml(record.pro)}</p>`);
+  if (mode === "routes" && (record.pro || (state.editor.canEdit && state.editor.enabled))) {
+    extra.push(`<p><strong>Protection</strong> <span class="route-pro-text">${escapeHtml(record.pro ?? "")}</span></p>`);
   }
 
   const description = record.description || "No description available.";
