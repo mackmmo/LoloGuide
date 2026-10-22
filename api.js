@@ -10,6 +10,7 @@ function saveAuthTokens(access, refresh = state.auth.refreshToken) {
 }
 
 function clearAuthTokens() {
+  LoloOffline.leave();
   saveAuthTokens("", "");
   state.profile = null;
   state.logbook = [];
@@ -59,6 +60,7 @@ async function postAuth(url, payload, storeTokens) {
 
     if (storeTokens) {
       if (!data.access) return { ok: false, error: "Login succeeded but no access token was returned." };
+      LoloOffline.leave();
       saveAuthTokens(data.access, data.refresh || "");
     }
     return { ok: true, data };
@@ -86,25 +88,7 @@ async function refreshAccessToken() {
 }
 
 async function fetchJson(url, retryAfterRefresh = true) {
-  try {
-    const headers = { Accept: "application/json" };
-    if (state.auth.accessToken && url.startsWith(state.apiBase)) {
-      headers.Authorization = `Bearer ${state.auth.accessToken}`;
-    }
-
-    const response = await fetch(url, { headers });
-
-    if (response.status === 401 && retryAfterRefresh && state.auth.refreshToken) {
-      if (await refreshAccessToken()) return fetchJson(url, false);
-      clearAuthTokens();
-      window.dispatchEvent(new Event("lolo:auth-expired"));
-    }
-
-    if (!response.ok) return { ok: false, error: `${response.status} ${response.statusText}` };
-    return { ok: true, data: await response.json() };
-  } catch (error) {
-    return { ok: false, error: friendlyFetchError(error) };
-  }
+  return apiRequest(url, {}, retryAfterRefresh);
 }
 
 function friendlyFetchError(error) {
@@ -141,6 +125,18 @@ function buildRoutesQuery() {
 }
 
 async function loadAllData() {
+  if (state.offlineMode && LoloOffline.bundle) {
+    const bundle = LoloOffline.bundle;
+    const guide = bundle.settings.guide ? bundle.guide : bundle.settings.map && bundle.mapGuide ? bundle.mapGuide : {sectors: [], areas: [], subareas: [], routes: []};
+    state.datasets.sectors = structuredClone(guide.sectors);
+    state.datasets.areas = structuredClone(guide.areas);
+    state.datasets.subareas = structuredClone(guide.subareas);
+    state.loadErrors = {};
+    rebuildIndexes();
+    await loadRoutesFromBackend();
+    fitMapToOverview();
+    return;
+  }
   state.isLoading = true;
   state.loadErrors = {};
   renderStatus();
@@ -257,19 +253,23 @@ function enrichRoute(route) {
 
 
 async function apiRequest(path, options = {}, retryAfterRefresh = true) {
+  if (!options.offlineBypass) {
+    return LoloOffline.request(path, options, () => apiRequest(path, {...options, offlineBypass: true}, retryAfterRefresh));
+  }
   const url = path.startsWith("http") ? path : `${state.apiBase}${path}`;
   const headers = { Accept: "application/json", ...(options.headers || {}) };
   if (state.auth.accessToken && url.startsWith(state.apiBase)) headers.Authorization = `Bearer ${state.auth.accessToken}`;
   if (options.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
   try {
-    const response = await fetch(url, { ...options, headers });
+    const {offlineBypass, ...fetchOptions} = options;
+    const response = await fetch(url, { ...fetchOptions, headers, signal: options.signal || AbortSignal.timeout(20000) });
     if (response.status === 401 && retryAfterRefresh && state.auth.refreshToken) {
       if (await refreshAccessToken()) return apiRequest(path, options, false);
       clearAuthTokens();
       window.dispatchEvent(new Event("lolo:auth-expired"));
     }
     const data = response.status === 204 ? null : await response.json().catch(() => ({}));
-    if (!response.ok) return { ok: false, error: data?.detail || Object.values(data || {}).flat().find(Boolean) || `${response.status} ${response.statusText}`, data };
+    if (!response.ok) return { ok: false, status: response.status, error: data?.detail || Object.values(data || {}).flat().find(Boolean) || `${response.status} ${response.statusText}`, data };
     return { ok: true, data };
   } catch (error) {
     return { ok: false, error: friendlyFetchError(error) };

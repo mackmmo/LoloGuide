@@ -24,6 +24,15 @@ function renderStatus() {
 
   const failures = Object.entries(state.loadErrors);
 
+  if (state.offlineMode) {
+    el.statusBanner.textContent = LoloOffline.bundle?.settings.guide ? 'Using the guide saved on this device.' : 'Guide is not saved on this device. Enable Guide in Profile while connected.';
+    return;
+  }
+  if (navigator.onLine === false) {
+    el.statusBanner.textContent = 'Using saved information while disconnected.';
+    return;
+  }
+
   if (state.isLoading) {
     el.statusBanner.textContent = `Loading data from ${state.apiBase}...`;
     return;
@@ -136,7 +145,10 @@ function renderList() {
   if (el.resultsMeta) el.resultsMeta.textContent = `${records.length} result${records.length === 1 ? "" : "s"}`;
 
   if (!records.length) {
-    el.recordList.innerHTML = `<div class="description-card empty-state">No routes match the current filters.</div>`;
+    const message = state.offlineMode && !LoloOffline.bundle?.settings.guide
+      ? 'Guide is not saved on this device. Enable Guide in Profile while connected. Your Log Book is still available from the menu.'
+      : 'No routes match the current filters.';
+    el.recordList.innerHTML = `<div class="description-card empty-state">${message}</div>`;
     return;
   }
 
@@ -891,7 +903,7 @@ function routeSendHistory(route) {
 }
 
 function buildSendHistory(route) {
-  return `<div class="send-history">${routeSendHistory(route).map(x => `<div class="send-history-row"><span>${escapeHtml(x.date_sent)} · ${escapeHtml(x.send_style || "sent")}</span><button type="button" class="ghost" data-edit-annual="${Number(x.id)}">Edit send</button></div>`).join("")}</div>`;
+  return `<div class="send-history">${routeSendHistory(route).map(x => `<div class="send-history-row"><span>${escapeHtml(x.date_sent)} · ${escapeHtml(x.send_style || "sent")}</span><button type="button" class="ghost" data-edit-annual="${escapeHtml(String(x.id))}">Edit send</button></div>`).join("")}</div>`;
 }
 
 function closeRouteLogModal() {

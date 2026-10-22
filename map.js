@@ -15,7 +15,7 @@ let floatingAreaPopup = null;
 function initMap() {
   map = new maplibregl.Map({
     container: "map",
-    style: MAP_STYLES[mapBasemap],
+    style: state.offlineMode ? offlineMapStyle() : MAP_STYLES[mapBasemap],
     maxPitch: 75,
     center: [-114.56835793693313, 46.69852662439601],
     zoom: 11
@@ -25,6 +25,7 @@ function initMap() {
 
   map.on("style.load", () => {
     mapStyleReady = true;
+    if (state.offlineMode) { renderOfflineMap(); return; }
     // Enable terrain before adding the layers that must be draped over it.
     applyMapDimension();
     renderOverlayLayers(true);
@@ -44,6 +45,10 @@ function initMap() {
 }
 
 function renderOverlayLayers(styleReady = false) {
+  if (state.offlineMode) {
+    if (map && (styleReady || mapStyleReady)) renderOfflineMap();
+    return;
+  }
   if (!map) {
     console.log("No map yet");
     return;
@@ -144,6 +149,7 @@ if (!map.getLayer("area-labels")) {
   });
   console.log("Areas labels layer added");
 }
+
     if (!map.getSource("roads")) {
   map.addSource("roads", {
     type: "vector",
@@ -677,6 +683,7 @@ function setMapControlStatus(message) {
 }
 
 function applyMapDimension(styleReady = false) {
+  if (state.offlineMode) { setMapControlStatus('Offline map supports 2D climbing locations, roads and trails.'); return; }
   syncMapCameraControls();
   if (!map || (!styleReady && !mapStyleReady)) return;
   if (mapDimension === "3d") {
@@ -705,6 +712,7 @@ function applyMapDimension(styleReady = false) {
 
 function bindMapDisplayControls() {
   document.querySelector("#map-basemap").addEventListener("change", event => {
+    if (state.offlineMode) { event.target.value = mapBasemap; setMapControlStatus('Map imagery requires a connection.'); return; }
     const choice = event.target.value;
     if (!MAP_STYLES[choice] || choice === mapBasemap) return;
     mapBasemap = choice;
@@ -750,7 +758,7 @@ function terrainOverviewZoom(desiredZoom = map.getZoom()) {
 
 function renderFloatingAreaPins() {
   if (!map || !mapStyleReady) return;
-  const visibleAreas = mapDimension === "3d" ? state.datasets.areas : [];
+  const visibleAreas = state.offlineMode ? (LoloOffline.bundle?.settings.map ? state.datasets.areas : []) : mapDimension === "3d" ? state.datasets.areas : [];
   const activeIds = new Set();
   visibleAreas.forEach(area => {
     const point = parsePoint(area.centroid);
@@ -972,4 +980,64 @@ function keepAreaPopupVisible(popup, remainingPans = 6) {
       map.panBy([dx, dy], { duration: 250 });
     }
   }));
+}
+
+// Offline map uses downloaded vector data and local geometry; no remote glyphs,
+// sprites, imagery, or terrain are required to display climbing locations.
+function offlineMapStyle() {
+  return {version: 8, sources: {}, layers: [{id: 'offline-background', type: 'background', paint: {'background-color': '#ece9df'}}]};
+}
+
+function renderOfflineMap() {
+  const bundle = LoloOffline.bundle;
+  if (!bundle) return;
+  if (bundle.settings && !bundle.settings.map) { setMapControlStatus('Map is not saved on this device. Enable Map in Profile while connected.'); return; }
+  const guide = bundle.mapGuide || bundle.guide;
+  for (const layer of ['roads', 'trails']) {
+    if (!map.getSource(`offline-${layer}`)) {
+      map.addSource(`offline-${layer}`, {type: 'vector', tiles: [`${state.apiBase}/tiles/${layer}/{z}/{x}/{y}.mvt`], maxzoom: 14});
+      map.addLayer({id: `offline-${layer}`, type: 'line', source: `offline-${layer}`, 'source-layer': layer,
+        paint: {'line-color': layer === 'roads' ? '#8b887e' : '#976631', 'line-width': layer === 'roads' ? 2 : 1.5,
+          ...(layer === 'trails' ? {'line-dasharray': [2, 1]} : {})}});
+    }
+  }
+  for (const layer of ['pois', 'trailheads', 'gates']) {
+    if (!map.getSource(`offline-${layer}`)) {
+      map.addSource(`offline-${layer}`, {type: 'vector', tiles: [`${state.apiBase}/tiles/${layer}/{z}/{x}/{y}.mvt`], maxzoom: 14});
+      map.addLayer({id: `offline-${layer}`, type: 'circle', source: `offline-${layer}`, 'source-layer': layer === 'pois' ? 'poi' : layer,
+        paint: {'circle-radius': layer === 'trailheads' ? 5 : 3, 'circle-color': layer === 'gates' ? '#994433' : '#557799', 'circle-stroke-color': '#fff', 'circle-stroke-width': 1}});
+    }
+  }
+  const areas = {type: 'FeatureCollection', features: guide.areas.flatMap(area => {
+    const polygons = parseMultiPolygon(area.boundary);
+    return polygons.length ? [{type: 'Feature', properties: {area_id: area.area_id, name: area.name},
+      geometry: {type: 'MultiPolygon', coordinates: polygons.map(polygon => polygon.map(ring => ring.map(([lat, lon]) => [lon, lat])))}}] : [];
+  })};
+  if (!map.getSource('offline-areas')) {
+    map.addSource('offline-areas', {type: 'geojson', data: areas});
+    map.addLayer({id: 'offline-area-fill', type: 'fill', source: 'offline-areas', paint: {'fill-color': '#58856b', 'fill-opacity': 0.25}});
+    map.addLayer({id: 'offline-area-outline', type: 'line', source: 'offline-areas', paint: {'line-color': '#41664e', 'line-width': 2}});
+  }
+  const points = {type: 'FeatureCollection', features: guide.routes.flatMap(route => {
+    const point = parsePoint(route.centroid);
+    return point ? [{type: 'Feature', properties: {route_id: route.route_id, name: route.name}, geometry: {type: 'Point', coordinates: [point[1], point[0]]}}] : [];
+  })};
+  if (!map.getSource('offline-routes')) {
+    map.addSource('offline-routes', {type: 'geojson', data: points});
+    map.addLayer({id: 'offline-routes', type: 'circle', source: 'offline-routes', paint: {'circle-radius': 5, 'circle-color': '#126448', 'circle-stroke-color': '#fff', 'circle-stroke-width': 1.5}});
+    if (!map._loloOfflineClickBound) {
+      map.on('click', 'offline-routes', event => {
+        const feature = event.features?.[0];
+        if (!feature) return;
+        const saved = LoloOffline.bundle;
+        const route = (saved.settings.guide ? saved.guide : saved.mapGuide).routes.find(row => String(row.route_id) === String(feature.properties.route_id));
+        if (!route) return;
+        state.selected = enrichRoute({...route}); state.detailTab = 'details';
+        showView('guide'); showMobileGuidePanel('detail'); renderDetail();
+      });
+      map._loloOfflineClickBound = true;
+    }
+  }
+  renderFloatingAreaPins();
+  setMapControlStatus('Offline map: saved climbing locations, roads and trails within about 5 km of downloaded locations. Imagery and 3D require a connection.');
 }

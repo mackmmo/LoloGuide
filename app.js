@@ -92,6 +92,8 @@ async function openAccountView(view) {
               </form>
       `;
 
+    await LoloOffline.mountPreferences(el.accountModalBody);
+
     if (state.editor.canEdit) {
       const editorToggleHTML = `
         <label>
@@ -249,7 +251,7 @@ function showGuide() {
   el.appShell.hidden = false;
 
   if (!guideStarted) {
-    initMap();
+    if (typeof maplibregl !== 'undefined') initMap();
     bindEvents();
     renderStats();
     renderFilters();
@@ -257,6 +259,12 @@ function showGuide() {
     guideStarted = true;
   } else {
     setTimeout(() => map?.resize(), 0);
+  }
+  if (state.offlineMode && map) {
+    mapStyleReady = false;
+    mapDimension = '2d';
+    map.setStyle(offlineMapStyle());
+    map.jumpTo({pitch: 0, bearing: 0});
   }
   loadAllData();
   loadLogbook();
@@ -424,8 +432,9 @@ function bindAuthEvents() {
   });
 }
 
-function init() {
+async function init() {
   bindAuthEvents();
+  await LoloOffline.init();
 
   const params = new URLSearchParams(window.location.search);
   const hasResetLink = params.has("reset_uid") && params.has("reset_token");
@@ -439,7 +448,7 @@ function init() {
     return;
   }
 
-  if (state.auth.accessToken) showGuide();
+  if (state.auth.accessToken || (state.offlineMode && LoloOffline.bundle)) showGuide();
   else showLogin();
 }
 

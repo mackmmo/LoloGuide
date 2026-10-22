@@ -162,6 +162,13 @@ function subareaMatchesArea(subareaId, areaId) {
 }
 
 async function openRouteInGuide(routeId, routeName = "") {
+  if (state.offlineMode && !LoloOffline.bundle?.settings.guide) {
+    const hint = LoloOffline.bundle?.routeHints?.[routeId];
+    if (hint) {
+      state.selected = {route_id: Number(routeId), name: hint.name, grade: hint.grade};
+      state.detailTab = 'details'; showView('guide'); showMobileGuidePanel('detail'); renderDetail(); return;
+    }
+  }
   let route = state.datasets.routes.find(item => routeId && String(item.route_id) === String(routeId));
   if (!route) {
     const result = await fetchJson(`${state.apiBase}/routes/${routeId ? "" : "?search=" + encodeURIComponent(routeName)}`);
