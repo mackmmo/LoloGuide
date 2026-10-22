@@ -290,138 +290,167 @@ el.detailSubtitle.innerHTML = buildDetailNav(record, mode);
   updateMap(record, mode);
 }
 
+// API names match guide/models.py and guide/serializers.py; never infer aliases.
+const ROUTE_EDIT_FIELDS = Object.freeze({
+  name: {id: 'edit-route-name', selector: '.route-name-text', label: 'Name', maxLength: 100},
+  description: {id: 'edit-route-description', selector: '.route-description-text', label: 'Description', multiline: true},
+  grade: {id: 'edit-route-grade', selector: '.route-grade-text', label: 'Grade', maxLength: 50},
+  type: {id: 'edit-route-type', selector: '.route-type-text', label: 'Type', maxLength: 50},
+  star_rating: {id: 'edit-route-stars', selector: '.route-stars-text', label: 'Stars', min: 0, max: 5},
+  height: {id: 'edit-route-height', selector: '.route-height-text', label: 'Height (ft)', min: 0, max: 2147483647},
+  danger_rating: {id: 'edit-route-danger', selector: '.route-danger-text', label: 'Danger', maxLength: 50},
+  first_ascencionist: {id: 'edit-route-fa', selector: '.route-fa-text', label: 'First ascent', maxLength: 100},
+  fa_year: {id: 'edit-route-fa-year', selector: '.route-fa-year-text', label: 'FA year', min: 1, max: () => new Date().getFullYear()}
+});
+
+function routeEditorInput(config) {
+  const inputs = document.querySelectorAll(`#${config.id}`);
+  if (inputs.length !== 1) throw new Error(`Expected exactly one ${config.label} input; reload the route.`);
+  return inputs[0];
+}
+
+function verifyRouteEditor(original) {
+  for (const [field, config] of Object.entries(ROUTE_EDIT_FIELDS)) {
+    if (!Object.hasOwn(original, field)) throw new Error(`API response missing ${field}; editing blocked. Check field names.`);
+    if (routeEditorInput(config).value !== String(original[field] ?? '')) throw new Error(`${config.label} loaded incorrectly; editing blocked.`);
+  }
+}
+
+function buildRouteChanges(original) {
+  const changes = {};
+  for (const [field, config] of Object.entries(ROUTE_EDIT_FIELDS)) {
+    const raw = routeEditorInput(config).value;
+    if (raw === String(original[field] ?? '')) continue;
+    let value = raw;
+    if (config.min !== undefined) {
+      const max = typeof config.max === 'function' ? config.max() : config.max;
+      if (!/^\d+$/.test(raw.trim())) throw new Error(`${config.label} must be a whole number and cannot be cleared.`);
+      value = Number(raw);
+      if (!Number.isSafeInteger(value) || value < config.min || value > max) throw new Error(`${config.label} must be between ${config.min} and ${max}.`);
+      if (original[field] !== null && value === Number(original[field])) continue;
+    } else {
+      if (field !== 'description') value = raw.trim();
+      if (config.maxLength && value.length > config.maxLength) throw new Error(`${config.label} exceeds ${config.maxLength} characters.`);
+      if (['name', 'grade', 'type'].includes(field) && !value) throw new Error(`${config.label} cannot be empty.`);
+      if (value === original[field]) continue;
+    }
+    changes[field] = value;
+  }
+  return changes;
+}
+
 function renderRouteDetailsPanel(record) {
   const isEditing = state.editor.canEdit && state.editor.enabled;
-  // Name Edits
-  const nameHTML = isEditing
-  ? `<input type="text" id="edit-route-name" value="${escapeHtml(record.name ?? "")}">`
-  : `<span>${escapeHtml(record.name ?? "")}</span>`
-
-  const nameElement = el.detailTitle.querySelector(".route-name-text");
-  
-  if (nameElement) {
-    nameElement.outerHTML = nameHTML;
-  }
-
-  const nameInput = document.querySelector("#edit-route-name");
-
-  // Description Edits
-    //------------------------------------------------------------------------------------------
-  const descriptionHTML = isEditing                                                            
-  ? `<textarea id="edit-route-description">${escapeHtml(record.description ?? "")}</textarea>`
-  : `<span>${escapeHtml(record.description ?? "")}</span>`;
-
-  el.detailDescription.innerHTML = buildDetailDescription(record, "routes");
-  const descriptionElement = el.detailDescription.querySelector(".route-description-text");
-  
-  if (descriptionElement) {
-    descriptionElement.outerHTML = descriptionHTML;
-  }
-
-  const descriptionInput = document.querySelector("#edit-route-description");
-  //---------------------------------------------------------------------------------------------
-
-  document.querySelector(".detail-panel")?.classList.remove("community-mode");
-  el.detailDescription.classList.remove("community-full-panel");
-
-  if (el.detailRelated) el.detailRelated.innerHTML = "";
-  
-  el.detailFacts.innerHTML = detailFacts(record, "routes").map(renderFact).join("");
-
-  // Grade Edits
-  //------------------------------------------------------------------------------------
-  const gradeHTML = isEditing
-  ? `<input type="text" id="edit-route-grade" value="${escapeHtml(record.grade ?? "")}">`
-  : `<span>${escapeHtml(record.grade ?? "")}</span>`
-
-  const gradeElement = el.detailFacts.querySelector(".route-grade-text");
-  console.log("Grade element:", gradeElement);
-  console.log("Editing enabled:", isEditing);
-  if (gradeElement) {
-    gradeElement.outerHTML = gradeHTML;
-  }
-  //------------------------------------------------------------------------------------
+  const original = Object.freeze(Object.fromEntries(
+    ['route_id', ...Object.keys(ROUTE_EDIT_FIELDS)].filter(field => Object.hasOwn(record, field)).map(field => [field, record[field]])
+  ));
+  document.querySelector('.detail-panel')?.classList.remove('community-mode');
+  el.detailDescription.classList.remove('community-full-panel');
+  el.detailDescription.innerHTML = buildDetailDescription(record, 'routes');
+  el.detailFacts.innerHTML = detailFacts(record, 'routes').map(renderFact).join('');
+  if (el.detailRelated) el.detailRelated.innerHTML = '';
 
   if (isEditing) {
-    el.detailFacts.insertAdjacentHTML(
-      "beforeend",
-      `
-        <button
-          type="button"
-          id="save-route-changes"
-          class="auth-primary"
-        >
-          Save Changes
-        </button>
-      `
-    );
-  }
-
-  const saveButton = document.querySelector("#save-route-changes");
-
-  saveButton?.addEventListener("click", async () => {
-    console.log("SAVE BUTTON CLICKED");
-    const nameInput = document.querySelector("#edit-route-name");
-    const descriptionInput = document.querySelector("#edit-route-description");
-    const gradeInput = document.querySelector("#edit-route-grade");
-    const typeInput = document.querySelector("#edit-route-type");
-    const starsInput = document.querySelector("#edit-route-stars");
-    const heightInput = document.querySelector("#edit-route-height");
-    const faInput = document.querySelector("#edit-route-fa");
-    const faYearInput = document.querySelector("#edit-route-fa-year");
-    const proInput = document.querySelector("#edit-route-pro");
-    const dangerRateingInput = document.querySelector("#edit-route-danger");
-  
-    if (!nameInput) return;
-  
-    const updatedName = nameInput.value.trim();
-    const updatedDescription = descriptionInput.value.trim()
-    const updateGrade = gradeInput.value.trim()
-  
-    if (!updatedName) {
-      alert("Route name cannot be empty.");
+    const message = document.createElement('p');
+    message.setAttribute('role', 'status');
+    message.setAttribute('aria-live', 'polite');
+    const saveButton = document.createElement('button');
+    saveButton.type = 'button';
+    saveButton.id = 'save-route-changes';
+    saveButton.className = 'auth-primary';
+    saveButton.textContent = 'Save Changes';
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.textContent = 'Cancel editing';
+    cancelButton.addEventListener('click', () => {
+      if (state.editor.saving) return;
+      state.editor.enabled = false;
+      localStorage.setItem('editingMode', 'false');
+      const toggle = document.querySelector('#editor-mode-toggle');
+      if (toggle) toggle.checked = false;
+      renderDetail();
+    });
+    el.detailFacts.append(saveButton, cancelButton, message);
+    try {
+      for (const [field, config] of Object.entries(ROUTE_EDIT_FIELDS)) {
+        const container = field === 'name' ? el.detailTitle : field === 'description' ? el.detailDescription : el.detailFacts;
+        const target = container.querySelector(config.selector);
+        if (!target) throw new Error(`Missing ${config.label} placeholder; editing blocked.`);
+        const input = document.createElement(config.multiline ? 'textarea' : 'input');
+        input.id = config.id;
+        if (!config.multiline) input.type = config.min !== undefined ? 'number' : 'text';
+        input.setAttribute('aria-label', config.label);
+        if (config.min !== undefined) {
+          input.min = config.min;
+          input.max = typeof config.max === 'function' ? config.max() : config.max;
+          input.step = '1';
+        }
+        if (config.maxLength) input.maxLength = config.maxLength;
+        input.value = String(original[field] ?? '');
+        target.replaceWith(input);
+      }
+      verifyRouteEditor(original);
+      if (!Number.isSafeInteger(Number(original.route_id)) || Number(original.route_id) < 1) throw new Error('Invalid route ID; editing blocked.');
+    } catch (error) {
+      saveButton.disabled = true;
+      message.textContent = error.message;
       return;
     }
-  
-    saveButton.disabled = true;
-    saveButton.textContent = "Saving...";
-  
-    try {
-      const result = await updateRoute(record.route_id, {
-        name: updatedName,
-        description: updatedDescription,
-        grade: updateGrade
-      });
-  
-      if (!result.ok) {
-        console.error("Save failed:", result);
-        alert("Could not save route changes.");
-        return;
+    let writeAttempted = false;
+    saveButton.addEventListener('click', async () => {
+      if (state.editor.saving || writeAttempted) return;
+      let requestStarted = false;
+      try {
+        if (!state.editor.canEdit || !state.editor.enabled) throw new Error('Editing is no longer enabled.');
+        if (String(currentDetailRecord()?.record?.route_id) !== String(original.route_id)) throw new Error('Route selection changed; reopen the editor.');
+        for (const field of Object.keys(original)) {
+          if (record[field] !== original[field]) throw new Error('Route data changed while editing; reopen the editor.');
+        }
+        const changes = buildRouteChanges(original);
+        if (!Object.keys(changes).length) {
+          message.textContent = 'No changes to save.';
+          return;
+        }
+        const summary = Object.entries(changes).map(([field, value]) =>
+          `${ROUTE_EDIT_FIELDS[field].label}: ${JSON.stringify(original[field])} → ${JSON.stringify(value)}`
+        ).join('\n');
+        if (!confirm(`Save changes to ${original.name} (route ${original.route_id})?\n\n${summary}`)) return;
+        state.editor.saving = true;
+        saveButton.disabled = true;
+        cancelButton.disabled = true;
+        saveButton.textContent = 'Saving...';
+        requestStarted = true;
+        writeAttempted = true;
+        const result = await updateRoute(original.route_id, changes);
+        if (!result.ok) throw new Error(`Save failed: ${JSON.stringify(result.error || result.data || 'Unknown error')}`);
+        if (String(result.data?.route_id) !== String(original.route_id)) throw new Error('Server returned a wrong or missing route ID.');
+        // Validate the entire response before changing the cached record.
+        for (const field of Object.keys(changes)) {
+          if (!Object.hasOwn(result.data, field) || result.data[field] !== changes[field]) throw new Error(`Server did not confirm ${ROUTE_EDIT_FIELDS[field].label}.`);
+        }
+        for (const field of Object.keys(changes)) record[field] = result.data[field];
+        renderList();
+        renderDetail();
+      } catch (error) {
+        message.textContent = requestStarted
+          ? `${error.message} The save may have reached the server. Reload and inspect the route before trying again.`
+          : error.message;
+      } finally {
+        state.editor.saving = false;
+        // A network failure does not prove that the server rejected the write.
+        saveButton.disabled = requestStarted;
+        cancelButton.disabled = false;
+        saveButton.textContent = requestStarted ? 'Reload route before saving again' : 'Save Changes';
       }
-  
-      record.name = result.data.name;
-      record.description = result.data.description
-      record.grade = result.data.grade
-      renderDetail();
-  
-      console.log("Route updated successfully:", result.data);
-  
-    } catch (error) {
-      console.error("Save error:", error);
-      alert("An error occurred while saving.");
-  
-    } finally {
-      saveButton.disabled = false;
-      saveButton.textContent = "Save Changes";
-    }
-  });
-
+    });
+  }
   if (el.detailLog) {
     el.detailLog.innerHTML = buildRouteLogCard(record);
-    bindRouteLogCard(record, "routes");
+    bindRouteLogCard(record, 'routes');
     bindTodoToggle(record);
   }
 }
+
 
 function existingTodo(routeId) {
   return (state.todos || []).find((item) => String(item.route) === String(routeId)) || null;
@@ -771,7 +800,17 @@ function routeTypeLabel(value) {
 }
 
 function renderFact([label, value]) {
-  const factClass = label === "Grade" ? "route-grade-text" : "";
+  const factClasses = {
+    "Grade": "route-grade-text",
+    "Type": "route-type-text",
+    "Stars": "route-stars-text",
+    "Height": "route-height-text",
+    "Danger": "route-danger-text",
+    "First ascent": "route-fa-text",
+    "FA year": "route-fa-year-text",
+  }
+
+  const factClass = factClasses[label] || "";
 
   return `<div class="fact-card">
             <strong>${escapeHtml(label)}</strong>
