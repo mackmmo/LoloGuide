@@ -464,4 +464,5 @@ button,input,select,textarea { font-family:var(--heading-font); }
 .offline-preferences { padding: 16px 0; border-top: 1px solid var(--border); }
 .offline-preferences label { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; }
 .offline-preferences input { margin-top: 4px; flex: 0 0 auto; }
+.offline-map-unavailable { position: absolute; inset: 0; z-index: 2; display: grid; place-content: center; padding: 4rem; text-align: center; background: var(--surface); color: var(--muted); }
 .offline-preferences small { display: block; color: var(--muted); line-height: 1.5; margin-top: 3px; }

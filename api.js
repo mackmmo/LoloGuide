@@ -10,7 +10,7 @@ function saveAuthTokens(access, refresh = state.auth.refreshToken) {
 }
 
 function clearAuthTokens() {
-  LoloOffline.leave();
+  globalThis.LoloOffline?.leave();
   saveAuthTokens("", "");
   state.profile = null;
   state.logbook = [];
@@ -60,7 +60,7 @@ async function postAuth(url, payload, storeTokens) {
 
     if (storeTokens) {
       if (!data.access) return { ok: false, error: "Login succeeded but no access token was returned." };
-      LoloOffline.leave();
+      globalThis.LoloOffline?.leave();
       saveAuthTokens(data.access, data.refresh || "");
     }
     return { ok: true, data };
@@ -125,7 +125,7 @@ function buildRoutesQuery() {
 }
 
 async function loadAllData() {
-  if (state.offlineMode && LoloOffline.bundle) {
+  if (state.offlineMode && globalThis.LoloOffline?.bundle) {
     const bundle = LoloOffline.bundle;
     const guide = bundle.settings.guide ? bundle.guide : bundle.settings.map && bundle.mapGuide ? bundle.mapGuide : {sectors: [], areas: [], subareas: [], routes: []};
     state.datasets.sectors = structuredClone(guide.sectors);
@@ -253,8 +253,13 @@ function enrichRoute(route) {
 
 
 async function apiRequest(path, options = {}, retryAfterRefresh = true) {
-  if (!options.offlineBypass) {
+  if (!options.offlineBypass && globalThis.LoloOffline) {
     return LoloOffline.request(path, options, () => apiRequest(path, {...options, offlineBypass: true}, retryAfterRefresh));
+  }
+  if (!globalThis.LoloOffline) {
+    const method = (options.method || 'GET').toUpperCase();
+    const personalWrite = method !== 'GET' && /\/api\/(logbook|todos|competition-sends)\//.test(path);
+    if (personalWrite || navigator.onLine === false) return {ok: false, error: 'Offline storage did not load. Reload the app before saving. Your entry has not been sent.'};
   }
   const url = path.startsWith("http") ? path : `${state.apiBase}${path}`;
   const headers = { Accept: "application/json", ...(options.headers || {}) };

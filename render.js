@@ -515,6 +515,13 @@ async function loadCommunity(routeId) {
 }
 
 function renderCommunityPanel(route) {
+  if (state.offlineMode && !globalThis.LoloOffline?.bundle?.settings.community) {
+    el.detailDescription.innerHTML = '<p class="muted">Community is not saved for offline use. Enable Community in Profile while connected.</p>';
+    if (el.detailLog) el.detailLog.innerHTML = '';
+    if (el.detailRelated) el.detailRelated.innerHTML = '';
+    el.detailFacts.innerHTML = '';
+    return;
+  }
   if (!route) return;
 
   document.querySelector(".detail-panel")?.classList.add("community-mode");
@@ -947,6 +954,7 @@ function openRouteLogModal(route, repeatSend = false, annualSend = null) {
   const status = form.elements.status;
   if (repeatSend) modal.querySelector(".eyebrow").textContent = "Log another send";
   const dateInput = form.elements.date_sent;
+  dateInput.min = LoloOfflineCore.MIN_SEND_DATE;
   dateInput.max = new Intl.DateTimeFormat("en-CA", {timeZone:"America/Denver", year:"numeric", month:"2-digit", day:"2-digit"}).format(new Date());
   if (repeatSend) dateInput.value = dateInput.max;
   if (repeatSend) form.elements.send_style.value = "repeat";
@@ -956,6 +964,7 @@ function openRouteLogModal(route, repeatSend = false, annualSend = null) {
     const isSent = status.value === "sent";
     sendField.hidden = !isSent;
     dateField.hidden = !isSent;
+    dateInput.disabled = !isSent;
   };
   status.addEventListener("change", syncStatusFields);
   syncStatusFields();
@@ -978,6 +987,8 @@ function openRouteLogModal(route, repeatSend = false, annualSend = null) {
     const payload = { route: route.route_id, status: fd.get("status"), send_style: fd.get("send_style") || null, attempts: Number(fd.get("attempts") || 0), date_sent: fd.get("date_sent") || null, beta: fd.get("beta") || null };
     if (repeatSend || annualSend) payload.status = "sent";
     if (payload.status !== "sent") { payload.send_style = null; payload.date_sent = null; }
+    try { LoloOfflineCore.validateSendDate(payload.date_sent); }
+    catch (error) { modal.querySelector('#route-log-message').textContent = error.message; dateInput.focus(); return; }
     const existing = existingRouteLog(route.route_id);
     const result = annualSend ? await updateCompetitionSend(annualSend.id, {date_sent: payload.date_sent, send_style: payload.send_style})
       : repeatSend ? await createCompetitionSend({route: route.route_id, date_sent: payload.date_sent, send_style: payload.send_style})

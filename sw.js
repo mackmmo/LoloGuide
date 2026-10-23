@@ -1,5 +1,5 @@
 /* Bump on every app-shell release. Waiting workers activate after old tabs close. */
-const SHELL = 'lolo-shell-v2';
+const SHELL = 'lolo-shell-v6';
 const TILE_PREFIX = 'lolo-map-';
 const INDEX = new URL('index.html', self.registration.scope).href;
 const MAPLIBRE = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js';

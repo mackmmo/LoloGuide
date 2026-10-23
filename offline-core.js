@@ -6,6 +6,16 @@
     'competition-sends': {id: 'id', defaults: {}},
     comments: {id: 'comment_id', defaults: {}}
   };
+  const MIN_SEND_DATE = '1900-01-01';
+  function validateSendDate(value, now = new Date()) {
+    if (value === null || value === undefined || value === '') return;
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error('Enter the send date as YYYY-MM-DD with a four-digit year.');
+    const parsed = new Date(`${value}T12:00:00Z`);
+    if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) throw new Error('Enter a real calendar date.');
+    if (value < MIN_SEND_DATE) throw new Error('Use a four-digit year from 1900 onward, for example 2026, not 0026.');
+    const today = new Intl.DateTimeFormat('en-CA', {timeZone: 'America/Denver', year: 'numeric', month: '2-digit', day: '2-digit'}).format(now);
+    if (value > today) throw new Error('A send cannot be dated in the future.');
+  }
   function resourcePath(path) {
     const match = /^\/api\/(logbook|todos|competition-sends|comments)\/(?:([^/?]+)\/)?$/.exec(path.split('?')[0]);
     return match && {name: match[1], target: match[2], ...resources[match[1]]};
@@ -25,7 +35,7 @@
     const resource = resourcePath(path);
     if (!resource || !['POST', 'PATCH', 'DELETE'].includes(method)) throw new Error('This change requires a connection.');
     if ((method === 'POST') === Boolean(resource.target)) throw new Error('Invalid offline operation.');
-    if (body.date_sent && (!/^\d{4}-\d{2}-\d{2}$/.test(body.date_sent) || body.date_sent > new Intl.DateTimeFormat('en-CA', {timeZone: 'America/Denver', year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date(now)))) throw new Error('Choose a valid send date, today or earlier.');
+    validateSendDate(body.date_sent, new Date(now));
     if (body.status !== undefined && !['sent', 'project'].includes(body.status)) throw new Error('Invalid log status.');
     if (body.attempts !== undefined && (!Number.isInteger(body.attempts) || body.attempts < 0)) throw new Error('Attempts must be a nonnegative whole number.');
     if (body.send_style && !['onsight', 'flash', 'redpoint', 'pinkpoint', 'repeat'].includes(body.send_style)) throw new Error('Invalid send style.');
@@ -116,7 +126,7 @@
     }
     return [...tiles];
   }
-  const api = {resources, resourcePath, collection, queue, acknowledge, filterRoutes, tileCoordinates};
+  const api = {resources, resourcePath, collection, queue, acknowledge, filterRoutes, tileCoordinates, MIN_SEND_DATE, validateSendDate};
   if (typeof module !== 'undefined') module.exports = api;
   else root.LoloOfflineCore = api;
 })(globalThis);

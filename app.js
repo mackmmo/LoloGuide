@@ -92,7 +92,7 @@ async function openAccountView(view) {
               </form>
       `;
 
-    await LoloOffline.mountPreferences(el.accountModalBody);
+    if (globalThis.LoloOffline) await LoloOffline.mountPreferences(el.accountModalBody);
 
     if (state.editor.canEdit) {
       const editorToggleHTML = `
@@ -434,7 +434,8 @@ function bindAuthEvents() {
 
 async function init() {
   bindAuthEvents();
-  await LoloOffline.init();
+  if (globalThis.LoloOffline) await LoloOffline.init();
+  else console.warn('Offline features did not load. Online login and browsing remain available.');
 
   const params = new URLSearchParams(window.location.search);
   const hasResetLink = params.has("reset_uid") && params.has("reset_token");
@@ -448,7 +449,7 @@ async function init() {
     return;
   }
 
-  if (state.auth.accessToken || (state.offlineMode && LoloOffline.bundle)) showGuide();
+  if (state.auth.accessToken || (state.offlineMode && globalThis.LoloOffline?.bundle)) showGuide();
   else showLogin();
 }
 

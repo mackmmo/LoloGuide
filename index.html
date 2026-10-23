@@ -23,7 +23,7 @@
       href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=111" />
+    <link rel="stylesheet" href="./styles.css?v=112" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-BYGF2CWJ49"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -230,6 +230,7 @@
 
       <section class="map-column">
         <div id="map"></div>
+        <div id="offline-map-unavailable" class="offline-map-unavailable" role="status" hidden>Map is not saved for offline use. Enable Map in Profile while connected.</div>
         <div id="map-display-controls" class="map-display-controls" aria-label="Map display" hidden>
           <label for="map-basemap">Map layer</label>
           <select id="map-basemap">
@@ -289,13 +290,13 @@
     <script src="./view.js?v=7"></script>
     <script src="./state.js?v=71"></script>
     <script src="./utils/utils.js?v=68"></script>
-    <script src="./offline-core.js?v=2"></script>
-    <script src="./offline.js?v=2"></script>
-    <script src="./api.js?v=77"></script>
+    <script src="./offline-core.js?v=3"></script>
+    <script src="./offline.js?v=5"></script>
+    <script src="./api.js?v=78"></script>
     <script src="./events.js?v=72"></script>
     <script src="./map.js?v=87"></script>
-    <script src="./render.js?v=92"></script>
-    <script src="./app.js?v=84"></script>
-    <script src="./community.js?v=98"></script>
+    <script src="./render.js?v=94"></script>
+    <script src="./app.js?v=85"></script>
+    <script src="./community.js?v=99"></script>
   </body>
 </html>

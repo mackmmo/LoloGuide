@@ -25,6 +25,11 @@ function getCommunityStartDate(range, today = new Date()) {
 function renderCommunityFeed() {
   const container = document.querySelector("#community-feed");
   if (!container) return;
+  if (state.offlineMode && !globalThis.LoloOffline?.bundle?.settings.community) {
+    communityAscents = [];
+    container.textContent = 'Community is not saved for offline use. Enable Community in Profile while connected.';
+    return;
+  }
   const range = document.querySelector("#community-date-filter")?.value || "mtd";
   const today = new Date();
   const start = getCommunityStartDate(range, today);
@@ -83,6 +88,10 @@ async function refreshCommunityView() {
   // Clear every cached public view when publication settings change.
   ["community-feed", "leaderboard-results", "hall-results"].forEach(id => document.getElementById(id).replaceChildren());
   const target = document.getElementById(communityTab === "feed" ? "community-feed" : communityTab === "hall" ? "hall-results" : "leaderboard-results");
+  if (state.offlineMode && !globalThis.LoloOffline?.bundle?.settings.community) {
+    target.textContent = 'Community is not saved for offline use. Enable Community in Profile while connected.';
+    return;
+  }
   target.innerHTML = '<p class="muted">Loading…</p>';
   let result;
   if (communityTab === "feed") result = await getCommunityFeed();

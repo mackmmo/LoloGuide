@@ -6,13 +6,15 @@ The header displays only a centered **OFFLINE MODE** label while disconnected: s
 
 ## Profile settings
 
-**Profile → Offline storage** offers three independent, device-specific options (off by default on new devices):
+**Profile → Offline storage** offers three independent account preferences (off by default for new accounts):
 
 - **Guide:** complete route descriptions, grades, areas, local search and filters.
 - **Community:** comments, feed, Hall of Fame and current-year standings. Offline information is the last saved snapshot; other years and unvisited drill-downs may be unavailable.
 - **Map:** climbing locations and local road/trail/POI/trailhead/gate tiles around saved climbing locations. Satellite/topographic imagery and 3D terrain still require connectivity. Map metadata is stored separately, so enabling Map does not implicitly enable the guide cache.
 
-Enabling a setting starts its download while connected. Changing it offline schedules the download for reconnection. Profile shows download progress and the last saved date. Disabling a setting removes that feature's local data; personal logs and pending changes are preserved. Existing downloads keep their corresponding preferences when upgraded.
+Enabling a setting starts its download while connected. Choices persist across logins/devices in the per-user settings table as `guide_data_sync`, `community_data_sync` and `map_data_sync`. Downloads remain device-local. Offline preference changes upload automatically on reconnection. Profile shows download progress and the last saved date. Disabling a setting removes its local data; personal logs and pending changes are preserved. Existing checked choices are preserved on the first upgrade to account preferences.
+
+Guide includes routes, areas and subareas, not Community or Map. Offline checks apply to content previously loaded online too: public views are cleared on connectivity changes, and the map shows an unavailable message if Map is disabled. Log Book and To-Do remain available independently of the switches.
 
 Personal Log Book, To-Do and annual-send data is always cached, with no preference, caching indicator, or manual sync UI. Every personal write is committed to IndexedDB before reporting success, then uploaded automatically when authenticated and connected. Changes made while an earlier version is uploading are retained as dependent operations, preserving the earlier retry payload. Unsynced records are projected over backend results until confirmed. Basic name/grade hints are retained for logged routes even when Guide is disabled, allowing existing logs to be edited offline.
 
@@ -28,7 +30,7 @@ Deploy the matching backend implementation and run its migration before releasin
 python manage.py migrate
 ```
 
-Migration `0006_offline_receipt` adds retry receipts; it does not alter route records. Authenticated `GET /api/offline-status/` must report `protocol: 1`. Automatic uploads wait if this capability is missing, keeping changes on the device. Do not delete receipts while clients may retry old operations. Server validation and conflicts retain the queued operation rather than dropping or overwriting it; unresolved errors require investigation before that operation can sync.
+Migration `0006_offline_receipt` adds retry receipts. Migration `0007_offline_preferences` adds the three Boolean preferences to the existing per-user settings model; neither changes route records or Django's `auth_user` table. Authenticated `GET /api/offline-status/` must report `protocol: 1`. Automatic uploads wait if this capability is missing, keeping changes on the device. Do not delete receipts while clients may retry old operations. Server validation and conflicts retain queued work; unresolved errors require investigation before that operation can sync.
 
 Serve frontend assets over HTTPS or localhost, including `offline.js`, `offline-core.js`, and `sw.js` with JavaScript MIME types. Keep `sw.js` at a stable URL and bump its shell version for each frontend release. Close old tabs and reopen to activate a waiting worker. The first shell install needs the pinned MapLibre CDN files to be reachable. Offline fonts fall back to device fonts. Supported browsers need service workers, IndexedDB, Cache Storage, Web Locks for coordinated uploads, `crypto.randomUUID`, and AbortSignal timeouts.
 

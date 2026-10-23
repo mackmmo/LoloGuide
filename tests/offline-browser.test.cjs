@@ -14,6 +14,7 @@ test('Profile preferences, automatic modes, durable logs and automatic reconnect
     area: 1, subarea: 2, height: 80, fa_year: 1998, first_ascencionist: 'Climber', star_rating: 3,
     description: 'A saved description', pro: 'Bolts', danger_rating: '', centroid: 'POINT(0 0)', crag_order: 1}];
   let logs = []; const receipts = new Map();
+  const preferences = {guide_data_sync: false, community_data_sync: false, map_data_sync: false};
   const server = http.createServer(async (request, response) => {
     const url = new URL(request.url, origin);
     const json = data => {response.setHeader('Content-Type', 'application/json'); response.end(JSON.stringify(data));};
@@ -30,7 +31,10 @@ test('Profile preferences, automatic modes, durable logs and automatic reconnect
     if (url.pathname === '/areas/') return json([{area_id: 1, sector: 1, name: 'Area', centroid: 'POINT(0 0)'}]);
     if (url.pathname === '/subareas/') return json([{subarea_id: 2, area: 1, name: 'Subarea', centroid: 'POINT(0 0)'}]);
     if (url.pathname === '/api/offline-status/') return json({protocol: 1, user_id: 11});
-    if (url.pathname === '/api/profile/') return json({username: 'Offline Tester', email: 'test@example.invalid', data_permissions: {}});
+    if (url.pathname === '/api/profile/') {
+      if (request.method === 'PATCH') { let raw = ''; for await (const chunk of request) raw += chunk; Object.assign(preferences, JSON.parse(raw)); }
+      return json({username: 'Offline Tester', email: 'test@example.invalid', data_permissions: preferences});
+    }
     if (url.pathname === '/api/editor-status/') return json({is_staff: false});
     if (url.pathname === '/api/logbook/') return json(logs);
     if (url.pathname.startsWith('/api/')) return json([]);
@@ -72,6 +76,11 @@ test('Profile preferences, automatic modes, durable logs and automatic reconnect
     // Log a route online before any optional cache has been enabled.
     await page.getByText('Offline Granite', {exact: true}).first().click();
     await page.locator('#route-log-open').click();
+    await page.locator('#route-log-form [name=date_sent]').fill('0026-09-20');
+    assert.equal(await page.locator('#route-log-form [name=date_sent]').evaluate(node => node.checkValidity()), false);
+    await page.locator('#route-log-form button[type=submit]').click();
+    assert.equal(await page.evaluate(() => LoloOffline.bundle.outbox.length), 0);
+    assert.equal(writes, 0);
     await page.locator('#route-log-form [name=status]').selectOption('project');
     await page.locator('#route-log-form [name=attempts]').fill('1');
     await page.locator('#route-log-form button[type=submit]').click();
@@ -79,7 +88,7 @@ test('Profile preferences, automatic modes, durable logs and automatic reconnect
     assert.equal(writes, 1);
     assert.equal(await page.evaluate(() => LoloOffline.bundle.settings.guide), false);
     await page.locator('#account-menu-button').click();
-    await page.locator('[data-account-view=profile]').click();
+    await page.locator('button[data-account-view=profile]').click();
     await page.locator('[data-offline-feature=guide]').waitFor();
     assert.equal(await page.locator('[data-offline-feature]').count(), 3);
     assert.equal(await page.locator('[data-offline-feature=guide]').isChecked(), false);
@@ -87,10 +96,40 @@ test('Profile preferences, automatic modes, durable logs and automatic reconnect
     await page.waitForFunction(() => Boolean(LoloOffline.bundle.featureDates.guide));
     assert.equal(await page.evaluate(() => LoloOffline.bundle.responses['/api/community-feed/'] === undefined), true);
     assert.equal(await page.evaluate(() => LoloOffline.bundle.mapCache), null);
+    await page.locator('#account-modal-close').click();
+    // Data seen online must disappear offline unless that feature was selected.
+    await page.evaluate(() => {
+      state.community = {routeId: 4, loading: false, stats: {total_sends: 99}, comments: [{comment: 'Online-only comment'}], error: ''};
+      document.querySelector('#community-feed').textContent = 'Online-only activity';
+    });
+    await context.setOffline(true);
+    await page.waitForFunction(() => state.offlineMode && state.community.stats === null);
+    assert.match(await page.locator('#community-feed').textContent(), /not saved for offline/);
+    assert.equal(await page.evaluate(async () => (await getCommunityFeed()).ok), false);
+    assert.equal(await page.evaluate(() => LoloOffline.bundle.settings.map), false);
+    await page.evaluate(() => showView('map'));
+    await page.locator('#offline-map-unavailable').waitFor({state: 'visible'});
+    await page.evaluate(() => showView('guide'));
+    await page.getByText('Offline Granite', {exact: true}).first().waitFor();
+    await context.setOffline(false); await page.waitForFunction(() => !state.offlineMode);
+    await page.locator('#account-menu-button').click(); await page.locator('button[data-account-view=profile]').click();
     await page.locator('[data-offline-feature=map]').check();
     await page.locator('[data-offline-feature=community]').check();
     await page.waitForFunction(() => Boolean(LoloOffline.bundle?.featureDates.map && LoloOffline.bundle.featureDates.community), null, {timeout: 60000});
+    await page.waitForFunction(() => Object.keys(LoloOffline.bundle.preferenceChanges).length === 0);
+    assert.deepEqual(preferences, {guide_data_sync: true, community_data_sync: true, map_data_sync: true});
     await page.locator('#account-modal-close').click();
+    // A separate device/context restores checked preferences from the server.
+    const otherDevice = await browser.newContext();
+    await otherDevice.route(url => url.origin !== origin, route => route.abort());
+    await otherDevice.addInitScript(token => sessionStorage.setItem('lolo-access-token', token), token);
+    const otherPage = await otherDevice.newPage(); await otherPage.goto(origin);
+    await otherPage.locator('#account-menu-button').click(); await otherPage.locator('button[data-account-view=profile]').click();
+    for (const feature of ['guide', 'community', 'map']) {
+      await otherPage.locator(`[data-offline-feature=${feature}]`).waitFor();
+      assert.equal(await otherPage.locator(`[data-offline-feature=${feature}]`).isChecked(), true);
+    }
+    await otherDevice.close();
     await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
     await context.setOffline(true);
     await page.waitForFunction(() => state.offlineMode);
@@ -123,9 +162,11 @@ test('Profile preferences, automatic modes, durable logs and automatic reconnect
     assert.equal(writes, 2);
     assert.equal(await page.locator('#offline-mode-badge').isVisible(), false);
     // Disabling all optional features must leave log data intact.
-    await page.locator('#account-menu-button').click(); await page.locator('[data-account-view=profile]').click();
+    await page.locator('#account-menu-button').click(); await page.locator('button[data-account-view=profile]').click();
     for (const feature of ['guide', 'community', 'map']) await page.locator(`[data-offline-feature=${feature}]`).uncheck();
     await page.waitForFunction(() => !LoloOffline.bundle.settings.map && !LoloOffline.bundle.settings.guide && !LoloOffline.bundle.settings.community && !LoloOffline.bundle.mapCache);
+    await page.waitForFunction(() => Object.keys(LoloOffline.bundle.preferenceChanges).length === 0);
+    assert.deepEqual(preferences, {guide_data_sync: false, community_data_sync: false, map_data_sync: false});
     assert.equal(await page.evaluate(() => LoloOffline.bundle.guide.routes.length), 0);
     assert.equal(await page.evaluate(() => LoloOffline.bundle.responses['/api/logbook/'][0].attempts), 2);
     await page.locator('#account-modal-close').click();

@@ -1,6 +1,7 @@
 /* Automatic connectivity, per-device feature preferences, durable personal logs. */
-const LoloOffline = (() => {
+globalThis.LoloOffline = (() => {
   const core = LoloOfflineCore;
+  const preferenceFields = {guide: 'guide_data_sync', community: 'community_data_sync', map: 'map_data_sync'};
   let database, memory = null, activeKey = null, syncing = false, preparing = false;
   let retryTimer, refreshTimer, refreshAgain = false, transition = Promise.resolve();
   const base = () => state.apiBase.replace(/\/$/, '');
@@ -17,7 +18,7 @@ const LoloOffline = (() => {
   }
   function normalize(bundle) {
     bundle.settings ||= {guide: Boolean(bundle.guide?.routes?.length), community: Boolean(bundle.responses['/api/community-feed/']), map: Boolean(bundle.mapCache)};
-    bundle.featureDates ||= {}; bundle.routeHints ||= {}; return bundle;
+    bundle.featureDates ||= {}; bundle.routeHints ||= {}; bundle.preferenceChanges ||= {}; return bundle;
   }
   async function db() {
     if (database) return database;
@@ -54,6 +55,8 @@ const LoloOffline = (() => {
     for (const node of document.querySelectorAll('[data-offline-status]')) node.textContent = text;
     const badge = document.querySelector('#offline-mode-badge');
     if (badge) { badge.hidden = !state.offlineMode; badge.textContent = 'OFFLINE MODE'; }
+    const unavailableMap = document.querySelector('#offline-map-unavailable');
+    if (unavailableMap) unavailableMap.hidden = !state.offlineMode || Boolean(memory?.settings.map);
   }
   async function attach() {
     const owner = tokenOwner();
@@ -69,7 +72,7 @@ const LoloOffline = (() => {
   }
   function scheduleSync(delay = 0) {
     clearTimeout(retryTimer);
-    if (connected() && tokenOwner() && memory?.outbox.length) retryTimer = setTimeout(() => sync(), delay);
+    if (connected() && tokenOwner() && (memory?.outbox.length || Object.keys(memory?.preferenceChanges || {}).length)) retryTimer = setTimeout(() => sync(), delay);
   }
   async function getList(path) {
     let url = new URL(base() + path); const rows = [], visited = new Set();
@@ -115,7 +118,22 @@ const LoloOffline = (() => {
     const bundle = await ensure(), key = activeKey;
     const url = new URL(path, base()), localPath = url.pathname + url.search, resource = core.resourcePath(url.pathname);
     await change(key, current => {
-      if (localPath === '/api/profile/') current.profile = result.data;
+      if (localPath === '/api/profile/') {
+        current.profile = structuredClone(result.data);
+        const complete = Object.values(preferenceFields).every(field => typeof result.data.data_permissions?.[field] === 'boolean');
+        if (complete && !current.accountPreferencesLoaded) {
+          // Preserve existing checked choices on the first account-preference upgrade.
+          for (const [feature, field] of Object.entries(preferenceFields)) {
+            if (current.settings[feature] && !result.data.data_permissions[field] && !Object.hasOwn(current.preferenceChanges, field)) current.preferenceChanges[field] = true;
+          }
+          current.accountPreferencesLoaded = true;
+        }
+        for (const [feature, field] of Object.entries(preferenceFields)) {
+          const value = Object.hasOwn(current.preferenceChanges, field) ? current.preferenceChanges[field] : result.data.data_permissions?.[field];
+          if (typeof value === 'boolean') current.settings[feature] = value;
+          if (Object.hasOwn(current.preferenceChanges, field)) current.profile.data_permissions = {...current.profile.data_permissions, [field]: value};
+        }
+      }
       if (resource && resource.name !== 'comments' && !resource.target && !url.search) current.responses[localPath] = Array.isArray(result.data) ? result.data : result.data?.results || [];
       else if (current.settings.community && isCommunity(url.pathname)) current.responses[localPath] = result.data;
       if (current.settings.community && resource?.name === 'comments' && Array.isArray(result.data)) {
@@ -137,6 +155,9 @@ const LoloOffline = (() => {
       }
     });
     if (tokenOwner() === bundle.owner) localStorage.setItem(sessionKey(), key);
+    if (localPath === '/api/profile/' && Object.entries(memory.settings).some(([feature, enabled]) => enabled && !memory.featureDates[feature])) {
+      clearTimeout(refreshTimer); refreshTimer = setTimeout(() => refreshFeatures(), 250);
+    }
   }
   async function request(path, options, network) {
     const url = new URL(path, base()), localPath = url.pathname + url.search;
@@ -165,6 +186,10 @@ const LoloOffline = (() => {
       return data === undefined ? {ok: false, error: 'This feature is not saved on this device. Enable it in Profile while connected.'} : {ok: true, data, offline: true};
     }
     const result = await network();
+    if (!connected() && method === 'GET') {
+      const latest = await attach(); const data = latest && cached(localPath, latest);
+      return data === undefined || data === null ? {ok: false, error: 'This feature is not saved for offline use.'} : {ok: true, data, offline: true};
+    }
     if (result.ok && method !== 'GET' && /^\/routes\/\d+\/$/.test(url.pathname) && memory?.settings.guide && result.data?.route_id) {
       try { await change(activeKey, current => { current.guide.routes = current.guide.routes.map(row => String(row.route_id) === String(result.data.route_id) ? result.data : row); }); }
       catch { /* Backend success is preserved if its optional cache cannot update. */ }
@@ -185,7 +210,17 @@ const LoloOffline = (() => {
       syncing = true;
       try {
         await attach(); const owner = tokenOwner(), key = activeKey;
-        if (!owner || !memory || memory.owner !== owner || !memory.outbox.length) return;
+        if (!owner || !memory || memory.owner !== owner) return;
+        const changes = {...memory.preferenceChanges};
+        if (Object.keys(changes).length) {
+          const saved = await apiRequest('/api/profile/', {offlineBypass: true, method: 'PATCH', body: JSON.stringify(changes)});
+          if (!saved.ok || Object.entries(changes).some(([field, value]) => saved.data?.data_permissions?.[field] !== value)) throw new Error('Offline preferences could not be confirmed. Deploy the preferences migration; your selections remain saved locally.');
+          await change(key, current => {
+            current.profile = saved.data;
+            for (const [field, value] of Object.entries(changes)) if (current.preferenceChanges[field] === value) delete current.preferenceChanges[field];
+          });
+        }
+        if (!memory.outbox.length) return;
         const status = await apiRequest('/api/offline-status/', {offlineBypass: true});
         if (!status.ok || status.data?.protocol !== 1 || String(status.data.user_id) !== owner) throw new Error('Uploads are waiting for an authenticated connection to the offline-enabled backend.');
         while (connected()) {
@@ -267,6 +302,9 @@ const LoloOffline = (() => {
     await ensure(); const key = activeKey; let oldMap;
     await change(key, current => {
       current.settings[feature] = enabled;
+      const field = preferenceFields[feature];
+      current.preferenceChanges[field] = enabled;
+      current.profile.data_permissions = {...current.profile.data_permissions, [field]: enabled};
       if (!enabled) {
         delete current.featureDates[feature];
         if (feature === 'community') for (const path of Object.keys(current.responses)) if (isCommunity(path)) delete current.responses[path];
@@ -275,13 +313,14 @@ const LoloOffline = (() => {
       }
     });
     if (oldMap) await caches.delete(oldMap);
+    scheduleSync();
     notify(enabled ? connected() ? 'Saving selected features…' : 'Will save when you reconnect.' : 'Preference saved.');
     clearTimeout(refreshTimer); refreshTimer = setTimeout(() => refreshFeatures(), 200);
   }
   async function mountPreferences(container) {
     await ensure();
     const section = document.createElement('section'); section.className = 'offline-preferences';
-    section.innerHTML = `<h3>Offline storage</h3><p class="muted">Choose what this device saves. The app switches automatically when your connection changes.</p>
+    section.innerHTML = `<h3>Offline storage</h3><p class="muted">These preferences are saved to your account. Each device downloads its own copy. The app switches automatically when your connection changes.</p>
       <label><input type="checkbox" data-offline-feature="guide"><span>Guide<small>Save all route descriptions, grades, areas and search filters for offline browsing.</small></span></label>
       <label><input type="checkbox" data-offline-feature="community"><span>Community<small>Save comments, activity and current standings. Offline views show the last saved information.</small></span></label>
       <label><input type="checkbox" data-offline-feature="map"><span>Map<small>Save climbing locations and nearby roads and trails. Uses more device storage. Satellite imagery and 3D require a connection.</small></span></label>
@@ -301,11 +340,21 @@ const LoloOffline = (() => {
     const offline = !connected(), changed = state.offlineMode !== offline;
     state.offlineMode = offline; await attach();
     if (offline) { state.editor.canEdit = false; state.editor.enabled = false; }
+    if (changed) {
+      state.communityRequest = (state.communityRequest || 0) + 1;
+      state.community = {routeId: null, loading: false, stats: null, comments: [], error: ''};
+      if (typeof refreshCommunityView === 'function') await refreshCommunityView();
+    }
     notify();
     if (changed && typeof map !== 'undefined' && map) {
+      floatingAreaPopup?.remove();
+      floatingAreaPins.forEach(pin => pin.marker.remove()); floatingAreaPins.clear();
+      marker?.remove(); marker = null;
       mapStyleReady = false; mapDimension = '2d';
       map.setStyle(offline ? offlineMapStyle() : MAP_STYLES[mapBasemap]); map.jumpTo({pitch: 0, bearing: 0});
     }
+    const unavailableMap = document.querySelector('#offline-map-unavailable');
+    if (unavailableMap) unavailableMap.hidden = !offline || Boolean(memory?.settings.map);
     if (refresh && changed && typeof guideStarted !== 'undefined' && guideStarted) {
       const hasDraft = Boolean(document.querySelector('#route-log-modal') || document.querySelector('#save-route-changes') || state.editor.saving);
       if (!hasDraft) await loadAllData();
