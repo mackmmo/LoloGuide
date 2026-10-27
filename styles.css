@@ -468,7 +468,7 @@ button,input,select,textarea { font-family:var(--heading-font); }
 .offline-preferences small { display: block; color: var(--muted); line-height: 1.5; margin-top: 3px; }
 
 .app-header {
-  background-image: url("./images/lolo-header-rock-texture.webp");
+  background-image: url("./images/header.png");
   background-size: cover;
   background-position: center;
 }
