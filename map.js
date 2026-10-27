@@ -22,6 +22,20 @@ function initMap() {
   });
 
   map.addControl(new maplibregl.NavigationControl(), "top-left");
+  const geoLocateControl = new maplibregl.GeolocateControl({
+    positionOptions: {
+      enableHighAccuracy: true,
+      maximumAge: 5000,
+      timeout: 15000
+    },
+
+    trackUserLocation: true,
+    showUserLocation: true,
+    showAccuracyCircle: true,
+    showUserHeading: true
+  });
+
+  map.addControl(geoLocateControl, "top-left");
 
   map.on("style.load", () => {
     mapStyleReady = true;
