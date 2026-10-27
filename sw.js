@@ -1,5 +1,5 @@
 /* Bump on every app-shell release. Waiting workers activate after old tabs close. */
-const SHELL = 'lolo-shell-v6';
+const SHELL = 'lolo-shell-v7';
 const TILE_PREFIX = 'lolo-map-';
 const INDEX = new URL('index.html', self.registration.scope).href;
 const MAPLIBRE = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js';
@@ -22,26 +22,83 @@ self.addEventListener('activate', event => event.waitUntil((async () => {
   await self.clients.claim();
 })()));
 
-self.addEventListener('fetch', event => {
+self.addEventListener("fetch", event => {
   const request = event.request;
-  // Private API data and ALL writes remain in the application layer.
-  if (request.method !== 'GET') return;
+
+  if (request.method !== "GET") return;
+
   const url = new URL(request.url);
-  if (request.mode === 'navigate' && url.origin === self.location.origin && url.pathname.startsWith(new URL(self.registration.scope).pathname)) {
-    event.respondWith((async () => (await (await caches.open(SHELL)).match(INDEX)) || fetch(request))());
+
+  const isAppPage =
+    request.mode === "navigate" &&
+    url.origin === self.location.origin &&
+    url.pathname.startsWith(
+      new URL(self.registration.scope).pathname
+    );
+
+  const isAppAsset =
+    url.origin === self.location.origin &&
+    /\.(js|css)$/.test(url.pathname);
+
+  // NETWORK FIRST: HTML, JavaScript, CSS
+  if (isAppPage || isAppAsset) {
+    event.respondWith((async () => {
+      const cache = await caches.open(SHELL);
+
+      try {
+        const response = await fetch(request);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        // Save the latest successful version.
+        await cache.put(
+          isAppPage ? INDEX : request,
+          response.clone()
+        );
+
+        return response;
+
+      } catch (error) {
+        // No connection? Use the downloaded version.
+        const cached = await cache.match(
+          isAppPage ? INDEX : request
+        );
+
+        if (cached) return cached;
+
+        throw error;
+      }
+    })());
+
     return;
   }
+
+  // CACHE FIRST: Downloaded map tiles
   event.respondWith((async () => {
     const shell = await caches.open(SHELL);
+
     const asset = await shell.match(request);
+
     if (asset) return asset;
-    // Only explicitly downloaded map packages are consulted; never generic API caches.
-    if (/\/tiles\/(areas|area-labels|roads|trails|pois|trailheads|gates)\/\d+\/\d+\/\d+\.mvt$/.test(url.pathname)) {
-      for (const key of (await caches.keys()).filter(key => key.startsWith(TILE_PREFIX))) {
-        const tile = await (await caches.open(key)).match(request);
+
+    if (
+      /\/tiles\/(areas|area-labels|roads|trails|pois|trailheads|gates)\/\d+\/\d+\/\d+\.mvt$/
+        .test(url.pathname)
+    ) {
+      const keys = await caches.keys();
+
+      for (const key of keys.filter(
+        key => key.startsWith(TILE_PREFIX)
+      )) {
+        const tileCache = await caches.open(key);
+        const tile = await tileCache.match(request);
+
         if (tile) return tile;
       }
     }
+
     return fetch(request);
   })());
 });
