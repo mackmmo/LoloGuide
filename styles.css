@@ -466,3 +466,17 @@ button,input,select,textarea { font-family:var(--heading-font); }
 .offline-preferences input { margin-top: 4px; flex: 0 0 auto; }
 .offline-map-unavailable { position: absolute; inset: 0; z-index: 2; display: grid; place-content: center; padding: 4rem; text-align: center; background: var(--surface); color: var(--muted); }
 .offline-preferences small { display: block; color: var(--muted); line-height: 1.5; margin-top: 3px; }
+
+.app-header {
+  background-image: url("./images/lolo-header-rock-texture.webp");
+  background-size: cover;
+  background-position: center;
+}
+
+.app-logo {
+  display: block;
+  width: auto;
+  height: 54px;
+  max-width: 160px;
+  object-fit: contain;
+}
