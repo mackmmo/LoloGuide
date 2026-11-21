@@ -77,28 +77,16 @@ test('Profile preferences, automatic modes, durable logs and automatic reconnect
       assert.equal(await guestPage.getByText('A saved description', {exact: true}).first().isVisible(), true);
       assert.deepEqual(personalRequests, []);
 
-      const snowflake = guestPage.getByRole('button', {name: 'Off-season report'});
-      const report = guestPage.getByRole('region', {name: 'Lolo Off-Season Report'});
-      await snowflake.click();
-      await report.waitFor();
       assert.equal(await guestPage.locator('.winter-drift').isVisible(), true);
+      assert.equal(await guestPage.getByRole('button', {name: 'Off-season report'}).count(), 0);
 
       await guestPage.setViewportSize({width: 320, height: 740});
-      await guestPage.emulateMedia({reducedMotion: 'reduce'});
-      const bounds = await report.boundingBox();
-      assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= 320);
-      for (let i = 0; i < 3; i++) await report.getByRole('button', {name: 'Check again'}).click();
-      await report.getByText(/Achievement unlocked: Sent the Couch/).waitFor();
-      await guestPage.keyboard.press('Escape');
-      assert.equal(await snowflake.getAttribute('aria-expanded'), 'false');
-      assert.equal(await snowflake.evaluate(node => node === document.activeElement), true);
       await guestPage.locator('#account-menu-button').click();
       await guestPage.getByRole('button', {name: 'Sign in', exact: true}).waitFor();
 
       await guestPage.clock.setFixedTime(new Date(2026, 4, 20, 12));
       await guestPage.reload();
       await guestPage.getByText('Offline Granite', {exact: true}).first().waitFor();
-      assert.equal(await snowflake.isVisible(), false);
       assert.equal(await guestPage.locator('.winter-drift').isVisible(), false);
     } finally {
       await guest.close();

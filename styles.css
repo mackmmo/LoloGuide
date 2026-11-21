@@ -536,6 +536,11 @@ button,input,select,textarea { font-family:var(--heading-font); }
   pointer-events: none;
 }
 
+@media (max-width: 620px) {
+  .is-winter .connection-badge { grid-area: 2 / 1 / 3 / -1; justify-self: center; }
+}
+
+/* Optional seasonal report template. Enable with the matching HTML and JS blocks.
 .winter-toggle {
   display: inline-flex;
   align-items: center;
@@ -600,12 +605,9 @@ button,input,select,textarea { font-family:var(--heading-font); }
 }
 .winter-next:hover { background: #d9eeee; }
 
-@media (max-width: 620px) {
-  .is-winter .connection-badge { grid-area: 2 / 1 / 3 / -1; justify-self: center; }
-}
-
 @media (max-width: 360px) {
   .winter-toggle { justify-content: center; padding: 0; }
   .winter-toggle span { display: none; }
   .winter-report { width: min(308px, calc(100vw - 48px)); }
 }
+*/

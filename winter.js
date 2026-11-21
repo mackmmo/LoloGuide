@@ -6,21 +6,24 @@
   if (!inSeason) return;
 
   const header = document.querySelector("#app-header");
+  if (!header) return;
+  header.classList.add("is-winter");
+  header.querySelector(".winter-drift")?.removeAttribute("hidden");
+
+  /* Optional seasonal report template. Enable with the matching HTML and CSS blocks.
   const widget = document.querySelector("#winter-widget");
+  if (!widget) return;
   const toggle = document.querySelector("#winter-toggle");
   const report = document.querySelector("#winter-report");
   const note = document.querySelector("#winter-note");
   const flake = toggle.querySelector("svg");
   const notes = [
     note.textContent,
-    "Training plan: one pull-up, followed by a long hot chocolate cooldown.",
-    "New gear beta: mittens are remarkably consistent at turning jugs into slopers.",
-    "Achievement unlocked: Sent the Couch (V0). No spotter, one blanket, zero falls."
+    "Add a second seasonal note here.",
+    "Add another note here."
   ];
   let currentNote = 0;
 
-  header.classList.add("is-winter");
-  header.querySelector(".winter-drift").removeAttribute("hidden");
   widget.hidden = false;
 
   function setReportOpen(open) {
@@ -55,4 +58,5 @@
     setReportOpen(false);
     if (focusWasInside) toggle.focus();
   });
+  */
 })();

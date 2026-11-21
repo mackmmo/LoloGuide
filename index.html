@@ -23,7 +23,7 @@
       href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=115" />
+    <link rel="stylesheet" href="./styles.css?v=116" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-BYGF2CWJ49"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -99,6 +99,7 @@
         <img class="app-logo" src="./images/lolo-lg-logo.png" alt="Lolo Guide"/>
         <span id="offline-mode-badge" class="connection-badge" role="status" aria-live="polite" hidden>OFFLINE MODE</span>
         <div class="header-actions">
+          <!-- Optional seasonal report template. Enable the matching blocks in styles.css and winter.js too.
           <div id="winter-widget" class="winter-widget" hidden>
             <button id="winter-toggle" class="winter-toggle" type="button" aria-label="Off-season report" aria-expanded="false" aria-controls="winter-report">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -107,12 +108,13 @@
               <span>Off-season</span>
             </button>
             <section id="winter-report" class="winter-report" aria-labelledby="winter-report-title" hidden>
-              <p class="winter-kicker">The very unofficial edition</p>
+              <p class="winter-kicker">Seasonal notes</p>
               <h2 id="winter-report-title">Lolo Off-Season Report</h2>
-              <p id="winter-note" aria-live="polite">Project update: still on the couch. Excellent rest stance.</p>
-              <button id="winter-next" class="winter-next" type="button">Check again</button>
+              <p id="winter-note" aria-live="polite">Add your first seasonal note here.</p>
+              <button id="winter-next" class="winter-next" type="button">Next note</button>
             </section>
           </div>
+          -->
           <div class="account-menu-wrap">
             <button 
             id="account-menu-button" 
@@ -319,6 +321,6 @@
     <script src="./render.js?v=95"></script>
     <script src="./app.js?v=86"></script>
     <script src="./community.js?v=100"></script>
-    <script src="./winter.js?v=1"></script>
+    <script src="./winter.js?v=2"></script>
   </body>
 </html>
