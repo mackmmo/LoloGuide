@@ -11,6 +11,10 @@ function syncBottomNavigation() {
 }
 
 function showView(view) {
+    if (view === "community" && !hasAccountAccess()) {
+        showSignInPrompt("Community", () => el.communityFeedButton.click());
+        return false;
+    }
     el.accountModal.hidden = true;
     el.accountMenu.hidden = true;
     el.accountMenuButton.setAttribute("aria-expanded", "false");
@@ -59,6 +63,7 @@ function showView(view) {
     }
 
     syncBottomNavigation();
+    return true;
 }
 
 el.guideViewButton.addEventListener("click", () => {

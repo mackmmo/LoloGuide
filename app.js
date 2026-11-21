@@ -6,6 +6,7 @@ let sectorById = new Map();
 let areaById = new Map();
 let subareaById = new Map();
 let guideStarted = false;
+let afterSignIn = null;
 
 function setAuthMessage(message = "", kind = "") {
   el.authMessage.textContent = message;
@@ -30,14 +31,61 @@ function showAuthMode(mode) {
   setAuthMessage();
 }
 
-function showLogin(message = "") {
+function showLogin(onSignIn = null) {
+  afterSignIn = onSignIn;
+  el.accountModal.hidden = true;
+  el.accountMenu.hidden = true;
+  el.accountMenuButton.setAttribute("aria-expanded", "false");
   el.appShell.hidden = true;
   el.authScreen.hidden = false;
   showAuthMode("login");
-  if (message) setAuthMessage(message, "error");
+  el.loginUsername.focus();
+}
+
+function showSignInPrompt(title, onSignIn = null) {
+  el.accountMenu.hidden = true;
+  el.accountMenuButton.setAttribute("aria-expanded", "false");
+  el.accountModal.hidden = false;
+  delete el.accountModal.dataset.accountView;
+  el.accountModalTitle.textContent = title;
+  el.accountModalBody.innerHTML = '<p class="muted">Sign in to access this content.</p><button type="button" class="auth-primary">Sign in</button>';
+  const signIn = el.accountModalBody.querySelector("button");
+  signIn.addEventListener("click", () => showLogin(onSignIn));
+  signIn.focus();
+  syncBottomNavigation();
+}
+
+function updateAccountControls() {
+  const accountAvailable = hasAccountAccess();
+  el.appShell.classList.toggle("is-guest", !accountAvailable);
+  document.querySelector("#sign-in-button").hidden = accountAvailable;
+  el.logoutButton.hidden = !accountAvailable;
+}
+
+function resetPrivateView() {
+  afterSignIn = null;
+  state.profile = null;
+  state.logbook = [];
+  state.todos = [];
+  state.competitionSends = [];
+  state.editor.canEdit = false;
+  state.editor.enabled = false;
+  state.detailTab = "details";
+  state.communityRequest = (state.communityRequest || 0) + 1;
+  state.community = { routeId: null, loading: false, stats: null, comments: [], error: "" };
+  clearCommunityView();
+  closeRouteLogModal();
+  el.accountModalBody.replaceChildren();
+}
+
+function showSignedOutGuide() {
+  resetPrivateView();
+  showView("guide");
+  showGuide();
 }
 
 async function loadLogbook() {
+  if (!hasAccountAccess()) return;
   const [result, sends] = await Promise.all([getLogbook(), getCompetitionSends()]);
   if (result.ok) state.logbook = Array.isArray(result.data) ? result.data : [];
   if (sends.ok) state.competitionSends = Array.isArray(sends.data) ? sends.data : (sends.data?.results || []);
@@ -45,12 +93,18 @@ async function loadLogbook() {
 }
 
 async function loadTodos() {
+  if (!hasAccountAccess()) return;
   const result = await getTodos();
   if (result.ok) state.todos = Array.isArray(result.data) ? result.data : [];
   return result;
 }
 
 async function openAccountView(view) {
+  if (!hasAccountAccess()) {
+    showSignInPrompt(view === "profile" ? "Profile" : "Log Book", () => openAccountView(view));
+    return;
+  }
+  const viewIsOpen = () => hasAccountAccess() && !el.accountModal.hidden && el.accountModal.dataset.accountView === view;
   el.accountMenu.hidden = true;
   el.accountMenuButton.setAttribute("aria-expanded", "false");
   el.accountModal.hidden = false;
@@ -60,6 +114,7 @@ async function openAccountView(view) {
     el.accountModalTitle.textContent = "Profile";
     el.accountModalBody.innerHTML = `<p class="muted">Loading profile…</p>`;
     const result = await getProfile();
+    if (!viewIsOpen()) return;
     if (!result.ok) { el.accountModalBody.textContent = String(result.error); return; }
     state.profile = result.data;
     el.accountModalBody.innerHTML = 
@@ -187,7 +242,7 @@ async function openAccountView(view) {
     el.accountModalTitle.textContent = "Log Book";
     el.accountModalBody.innerHTML = `<p class="muted">Loading Log Book…</p>`;
     await Promise.all([loadLogbook(), loadTodos()]);
-    renderLogbookModal();
+    if (viewIsOpen()) renderLogbookModal();
   }
 }
 
@@ -245,39 +300,47 @@ function bindLogbookRouteLinks() {
 }
 
 function showGuide() {
-  showView("guide");
-  
   el.authScreen.hidden = true;
   el.appShell.hidden = false;
+  updateAccountControls();
 
   if (!guideStarted) {
+    showView("guide");
     if (typeof maplibregl !== 'undefined') initMap();
     bindEvents();
     renderStats();
     renderFilters();
     render();
     guideStarted = true;
+    loadAllData();
   } else {
+    renderDetail();
     setTimeout(() => map?.resize(), 0);
   }
-  if (state.offlineMode && map) {
-    mapStyleReady = false;
-    mapDimension = '2d';
-    map.setStyle(offlineMapStyle());
-    map.jumpTo({pitch: 0, bearing: 0});
-  }
-  loadAllData();
-  loadLogbook();
-  loadTodos();
-  getProfile().then((result) => { if (result.ok) state.profile = result.data; });
-  getEditorStatus().then((result) => {
-    state.editor.canEdit =
-      result.ok && result.data?.is_staff === true;
+}
 
-    renderDetail();
-  });
+async function loadSignedInData() {
+  if (!hasAccountAccess()) return;
+  const session = authSession;
+  const [profile, editor] = await Promise.all([getProfile(), getEditorStatus(), loadLogbook(), loadTodos()]);
+  if (session !== authSession || !hasAccountAccess()) return;
+  if (profile.ok) state.profile = profile.data;
+  state.editor.canEdit = !state.offlineMode && editor.ok && editor.data?.is_staff === true;
+  state.editor.enabled = state.editor.canEdit && localStorage.getItem("editingMode") === "true";
+  if (state.detailTab === "details") renderDetail();
 }
 function bindAuthEvents() {
+  document.querySelector("#sign-in-button").addEventListener("click", () => showLogin());
+  document.querySelector("#browse-guide-button").addEventListener("click", () => {
+    afterSignIn = null;
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("reset_uid") || url.searchParams.has("reset_token")) {
+      url.searchParams.delete("reset_uid");
+      url.searchParams.delete("reset_token");
+      window.history.replaceState({}, document.title, url);
+    }
+    showGuide();
+  });
   el.loginTab.addEventListener("click", () => showAuthMode("login"));
   el.registerTab.addEventListener("click", () => showAuthMode("register"));
 
@@ -371,12 +434,11 @@ function bindAuthEvents() {
     }
     el.loginPassword.value = "";
 
-    const editorResult = await getEditorStatus()
-  
-    state.editor.canEdit = 
-      editorResult.ok && editorResult.data?.is_staff === true;
-
+    const destination = afterSignIn;
+    afterSignIn = null;
     showGuide();
+    loadSignedInData();
+    destination?.();
   });
 
   el.registerForm.addEventListener("submit", async (event) => {
@@ -409,7 +471,7 @@ function bindAuthEvents() {
     el.registerForm.reset();
     showAuthMode("login");
     el.loginUsername.value = username;
-    setAuthMessage("Account created. Log in to open the guide.", "success");
+    setAuthMessage("Account created. Sign in to use your account.", "success");
     el.loginPassword.focus();
   });
 
@@ -424,12 +486,10 @@ function bindAuthEvents() {
 
   el.logoutButton.addEventListener("click", () => {
     clearAuthTokens();
-    showLogin();
+    showSignedOutGuide();
   });
 
-  window.addEventListener("lolo:auth-expired", () => {
-    showLogin("Your session expired. Please log in again.");
-  });
+  window.addEventListener("lolo:auth-expired", showSignedOutGuide);
 }
 
 async function init() {
@@ -449,8 +509,8 @@ async function init() {
     return;
   }
 
-  if (state.auth.accessToken || (state.offlineMode && globalThis.LoloOffline?.bundle)) showGuide();
-  else showLogin();
+  showGuide();
+  loadSignedInData();
 }
 
 init();

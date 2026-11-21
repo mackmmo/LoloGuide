@@ -57,6 +57,27 @@ test('Profile preferences, automatic modes, durable logs and automatic reconnect
   let browser;
   try {
     browser = await chromium.launch({headless: true, ...(process.env.PLAYWRIGHT_CHANNEL ? {channel: process.env.PLAYWRIGHT_CHANNEL} : {})});
+    const guest = await browser.newContext();
+    try {
+      await guest.route(url => url.origin !== origin, route => route.abort());
+      const guestPage = await guest.newPage();
+      const personalRequests = [];
+      guestPage.on('request', request => {
+        if (new URL(request.url()).pathname.startsWith('/api/')) personalRequests.push(request.url());
+      });
+      await guestPage.goto(origin);
+      await guestPage.getByText('Offline Granite', {exact: true}).first().click();
+      assert.equal(await guestPage.locator('#auth-screen').isVisible(), false);
+      assert.match(await guestPage.locator('#app-shell').getAttribute('class'), /is-guest/);
+      await guestPage.locator('[data-detail-tab=community]').click();
+      await guestPage.getByText('Sign in to access this content.', {exact: true}).waitFor();
+      await guestPage.getByRole('button', {name: 'Sign in', exact: true}).click();
+      await guestPage.getByRole('button', {name: 'Back to the guidebook'}).click();
+      assert.equal(await guestPage.getByText('A saved description', {exact: true}).first().isVisible(), true);
+      assert.deepEqual(personalRequests, []);
+    } finally {
+      await guest.close();
+    }
     const context = await browser.newContext();
     const page = await context.newPage(); const errors = [];
     page.on('pageerror', error => errors.push(error.message));

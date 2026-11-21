@@ -1,3 +1,10 @@
+let authSession = 0;
+let refreshInFlight = null;
+
+function hasAccountAccess() {
+  return Boolean(state.auth.accessToken || (state.offlineMode && globalThis.LoloOffline?.bundle));
+}
+
 function saveAuthTokens(access, refresh = state.auth.refreshToken) {
   state.auth.accessToken = access || "";
   state.auth.refreshToken = refresh || "";
@@ -10,6 +17,7 @@ function saveAuthTokens(access, refresh = state.auth.refreshToken) {
 }
 
 function clearAuthTokens() {
+  authSession++;
   globalThis.LoloOffline?.leave();
   saveAuthTokens("", "");
   state.profile = null;
@@ -60,6 +68,7 @@ async function postAuth(url, payload, storeTokens) {
 
     if (storeTokens) {
       if (!data.access) return { ok: false, error: "Login succeeded but no access token was returned." };
+      authSession++;
       globalThis.LoloOffline?.leave();
       saveAuthTokens(data.access, data.refresh || "");
     }
@@ -69,18 +78,17 @@ async function postAuth(url, payload, storeTokens) {
   }
 }
 
-async function refreshAccessToken() {
-  if (!state.auth.refreshToken) return false;
+async function refreshAccessToken(session, token) {
   try {
     const response = await fetch(`${state.apiBase}/api/token/refresh/`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ refresh: state.auth.refreshToken })
+      body: JSON.stringify({ refresh: token })
     });
     if (!response.ok) return false;
     const data = await response.json();
-    if (!data.access) return false;
-    saveAuthTokens(data.access, data.refresh || state.auth.refreshToken);
+    if (session !== authSession || !data.access) return false;
+    saveAuthTokens(data.access, data.refresh || token);
     return true;
   } catch {
     return false;
@@ -253,27 +261,50 @@ function enrichRoute(route) {
 
 
 async function apiRequest(path, options = {}, retryAfterRefresh = true) {
+  const url = new URL(path, state.apiBase + "/");
+  const sameOrigin = url.origin === new URL(state.apiBase).origin;
+  const method = (options.method || "GET").toUpperCase();
+  const publicRead = sameOrigin && method === "GET" && /^\/(?:sectors|areas|subareas|routes(?:\/\d+)?)\/$/.test(url.pathname);
+  const signInRequired = { ok: false, status: 401, error: "Sign in to access this content." };
+  const session = authSession;
+  if (!publicRead && !hasAccountAccess()) return signInRequired;
+
   if (!options.offlineBypass && globalThis.LoloOffline) {
-    return LoloOffline.request(path, options, () => apiRequest(path, {...options, offlineBypass: true}, retryAfterRefresh));
+    const result = await LoloOffline.request(path, options, () => {
+      if (!publicRead && session !== authSession) return signInRequired;
+      return apiRequest(path, {...options, offlineBypass: true}, retryAfterRefresh);
+    });
+    return publicRead || session === authSession ? result : signInRequired;
   }
+  if (!publicRead && !state.auth.accessToken) return signInRequired;
   if (!globalThis.LoloOffline) {
-    const method = (options.method || 'GET').toUpperCase();
     const personalWrite = method !== 'GET' && /\/api\/(logbook|todos|competition-sends)\//.test(path);
     if (personalWrite || navigator.onLine === false) return {ok: false, error: 'Offline storage did not load. Reload the app before saving. Your entry has not been sent.'};
   }
-  const url = path.startsWith("http") ? path : `${state.apiBase}${path}`;
   const headers = { Accept: "application/json", ...(options.headers || {}) };
-  if (state.auth.accessToken && url.startsWith(state.apiBase)) headers.Authorization = `Bearer ${state.auth.accessToken}`;
+  const accessToken = state.auth.accessToken;
+  if (!publicRead && sameOrigin && accessToken) headers.Authorization = `Bearer ${accessToken}`;
   if (options.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
   try {
     const {offlineBypass, ...fetchOptions} = options;
     const response = await fetch(url, { ...fetchOptions, headers, signal: options.signal || AbortSignal.timeout(20000) });
-    if (response.status === 401 && retryAfterRefresh && state.auth.refreshToken) {
-      if (await refreshAccessToken()) return apiRequest(path, options, false);
+    if (!publicRead && session !== authSession) return signInRequired;
+    if (!publicRead && sameOrigin && response.status === 401 && retryAfterRefresh && state.auth.refreshToken) {
+      if (accessToken !== state.auth.accessToken) return apiRequest(path, options, false);
+      if (refreshInFlight?.session !== session) {
+        const refresh = {session, promise: refreshAccessToken(session, state.auth.refreshToken)};
+        refreshInFlight = refresh;
+        refresh.promise.finally(() => { if (refreshInFlight === refresh) refreshInFlight = null; });
+      }
+      const refreshed = await refreshInFlight.promise;
+      if (session !== authSession) return signInRequired;
+      if (refreshed) return apiRequest(path, options, false);
       clearAuthTokens();
       window.dispatchEvent(new Event("lolo:auth-expired"));
+      return signInRequired;
     }
     const data = response.status === 204 ? null : await response.json().catch(() => ({}));
+    if (!publicRead && session !== authSession) return signInRequired;
     if (!response.ok) return { ok: false, status: response.status, error: data?.detail || Object.values(data || {}).flat().find(Boolean) || `${response.status} ${response.statusText}`, data };
     return { ok: true, data };
   } catch (error) {

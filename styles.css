@@ -480,3 +480,10 @@ button,input,select,textarea { font-family:var(--heading-font); }
   max-width: 160px;
   object-fit: contain;
 }
+
+.is-guest [data-account-required],
+.is-guest [data-bottom-nav="community"],
+.is-guest [data-bottom-nav="logbook"] {
+  color: var(--muted);
+  filter: grayscale(1);
+}

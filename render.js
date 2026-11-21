@@ -270,11 +270,11 @@ el.detailSubtitle.innerHTML = buildDetailNav(record, mode);
     el.detailNav.innerHTML = `
       ${mapAction}<div class="route-detail-tabs" role="tablist" aria-label="Route detail">
         <button type="button" class="route-detail-tab ${state.detailTab === "details" ? "is-active" : ""}" data-detail-tab="details">Details</button>
-        <button type="button" class="route-detail-tab ${state.detailTab === "community" ? "is-active" : ""}" data-detail-tab="community">Community</button>
+        <button type="button" class="route-detail-tab ${state.detailTab === "community" ? "is-active" : ""}" data-detail-tab="community" data-account-required>Community</button>
       </div>`;
     bindRouteDetailTabs(record);
 
-    if (state.detailTab === "community") {
+    if (hasAccountAccess() && state.detailTab === "community") {
       renderCommunityPanel(record);
     } else {
       renderRouteDetailsPanel(record);
@@ -458,6 +458,11 @@ function renderRouteDetailsPanel(record) {
     });
   }
   if (el.detailLog) {
+    if (!hasAccountAccess()) {
+      el.detailLog.innerHTML = '<button type="button" class="ghost" data-account-required>Sign in to log a climb or add a To-Do</button>';
+      el.detailLog.querySelector("button").addEventListener("click", () => showLogin());
+      return;
+    }
     el.detailLog.innerHTML = buildRouteLogCard(record);
     bindRouteLogCard(record, 'routes');
     bindTodoToggle(record);
@@ -484,15 +489,24 @@ async function bindTodoToggle(route) {
 
 function bindRouteDetailTabs(route) {
   document.querySelectorAll("[data-detail-tab]").forEach((button) => {
-    button.addEventListener("click", async () => {
-      state.detailTab = button.dataset.detailTab;
+    const tab = button.dataset.detailTab;
+    const selectTab = () => {
+      state.detailTab = tab;
       renderDetail();
-      if (state.detailTab === "community") await loadCommunity(route.route_id);
+      if (tab === "community") loadCommunity(route.route_id);
+    };
+    button.addEventListener("click", () => {
+      if (tab === "community" && !hasAccountAccess()) {
+        showSignInPrompt("Route Community", selectTab);
+        return;
+      }
+      selectTab();
     });
   });
 }
 
 async function loadCommunity(routeId) {
+  if (!hasAccountAccess()) return;
   const request = state.communityRequest = (state.communityRequest || 0) + 1;
   state.community = { routeId, loading: true, stats: null, comments: [], error: "" };
   renderCommunityPanel(currentDetailRecord()?.record);

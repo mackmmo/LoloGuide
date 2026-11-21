@@ -337,6 +337,7 @@ globalThis.LoloOffline = (() => {
     notify(dates.length ? `Saved on this device: ${dates.map(([feature, date]) => `${feature} (${new Date(date).toLocaleDateString()})`).join(', ')}.` : 'Enable a feature to save it on this device.');
   }
   async function updateConnectivity(refresh = true) {
+    const hadAccountAccess = hasAccountAccess();
     const offline = !connected(), changed = state.offlineMode !== offline;
     state.offlineMode = offline; await attach();
     if (offline) { state.editor.canEdit = false; state.editor.enabled = false; }
@@ -356,10 +357,13 @@ globalThis.LoloOffline = (() => {
     const unavailableMap = document.querySelector('#offline-map-unavailable');
     if (unavailableMap) unavailableMap.hidden = !offline || Boolean(memory?.settings.map);
     if (refresh && changed && typeof guideStarted !== 'undefined' && guideStarted) {
+      if (hadAccountAccess && !hasAccountAccess()) showSignedOutGuide();
       const hasDraft = Boolean(document.querySelector('#route-log-modal') || document.querySelector('#save-route-changes') || state.editor.saving);
       if (!hasDraft) await loadAllData();
-      await loadLogbook(); await loadTodos(); if (!hasDraft) renderDetail();
-      if (!offline) {
+      updateAccountControls();
+      if (hasAccountAccess()) await Promise.all([loadLogbook(), loadTodos()]);
+      if (!hasDraft) renderDetail();
+      if (!offline && hasAccountAccess()) {
         const status = await getEditorStatus(); state.editor.canEdit = status.ok && status.data?.is_staff === true;
         state.editor.enabled = state.editor.canEdit && localStorage.getItem('editingMode') === 'true';
       }

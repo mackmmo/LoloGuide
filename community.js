@@ -75,6 +75,7 @@ function renderStandings(entries, board = null, year = null) {
 }
 
 async function refreshCommunityView() {
+  if (!hasAccountAccess()) return;
   const request = ++communityRequest;
   communityAscents = [];
   document.querySelectorAll("[data-community-tab]").forEach(button => {
@@ -117,7 +118,15 @@ async function refreshCommunityView() {
   }
 }
 
-el.communityFeedButton.addEventListener("click", () => { showView("community"); refreshCommunityView(); });
+function clearCommunityView() {
+  communityRequest++;
+  communityAscents = [];
+  ["community-feed", "leaderboard-results", "hall-results"].forEach(id => document.getElementById(id).replaceChildren());
+}
+
+el.communityFeedButton.addEventListener("click", () => {
+  if (showView("community")) refreshCommunityView();
+});
 document.querySelectorAll("[data-community-tab]").forEach(button => button.addEventListener("click", () => { communityTab = button.dataset.communityTab; refreshCommunityView(); }));
 ["leaderboard-board", "leaderboard-year"].forEach(id => document.getElementById(id).addEventListener("change", refreshCommunityView));
 
