@@ -78,16 +78,36 @@ test('Profile preferences, automatic modes, durable logs and automatic reconnect
       assert.deepEqual(personalRequests, []);
 
       assert.equal(await guestPage.locator('.winter-drift').isVisible(), true);
+      assert.equal(await guestPage.locator('.winter-logo-ice').isVisible(), true);
+      const edgeIce = guestPage.locator('.winter-edge-ice');
+      assert.equal(await edgeIce.isVisible(), true);
+      assert.equal(await edgeIce.evaluate(node => getComputedStyle(node).pointerEvents), 'none');
       assert.equal(await guestPage.getByRole('button', {name: 'Off-season report'}).count(), 0);
 
+      const snow = guestPage.locator('.winter-snow');
+      const firstFlake = snow.locator('.winter-flake').first();
+      const snowAnimationState = () => firstFlake.evaluate(node => getComputedStyle(node).animationPlayState);
+      assert.equal(await snow.isVisible(), true);
+      assert.equal(await firstFlake.evaluate(node => getComputedStyle(node).animationName), 'winter-fall');
       await guestPage.setViewportSize({width: 320, height: 740});
       await guestPage.locator('#account-menu-button').click();
       await guestPage.getByRole('button', {name: 'Sign in', exact: true}).waitFor();
+      await guestPage.getByRole('button', {name: 'Pause snowfall'}).click();
+      assert.equal(await snowAnimationState(), 'paused');
+      await guestPage.getByRole('button', {name: 'Resume snowfall'}).click();
+      assert.equal(await snowAnimationState(), 'running');
+      await guestPage.emulateMedia({reducedMotion: 'reduce'});
+      assert.equal(await snow.isVisible(), false);
+      assert.equal(await guestPage.locator('#winter-snow-control').isVisible(), false);
+      assert.equal(await edgeIce.isVisible(), true);
 
+      await guestPage.emulateMedia({reducedMotion: 'no-preference'});
       await guestPage.clock.setFixedTime(new Date(2026, 4, 20, 12));
       await guestPage.reload();
       await guestPage.getByText('Offline Granite', {exact: true}).first().waitFor();
       assert.equal(await guestPage.locator('.winter-drift').isVisible(), false);
+      assert.equal(await edgeIce.isVisible(), false);
+      assert.equal(await snow.isVisible(), false);
     } finally {
       await guest.close();
     }
